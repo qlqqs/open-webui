@@ -1,4 +1,8 @@
 <script lang="ts">
+	// sub2api-embed
+	import { isEmbedMode } from '$lib/embed/mode';
+	import { notifyBalanceChanged } from '$lib/embed/bridge';
+	import { embedErrorToast } from '$lib/embed/app';
 	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import { stripBase, withBase } from '$lib/embed/paths';
 	import type { TerminalContext } from '$lib/types';
@@ -1099,11 +1103,14 @@
 			if (!$tools) {
 				tools.set(await getTools(localStorage.token));
 			}
+			// sub2api-embed: function listing is admin-only and skills are removed in embed mode;
+			// their absence must not abort the preset defaults below
+			const embedOptional = (e: unknown) => (isEmbedMode() ? [] : Promise.reject(e));
 			if (!$functions) {
-				functions.set(await getFunctions(localStorage.token));
+				functions.set(await getFunctions(localStorage.token).catch(embedOptional));
 			}
 			if (!$skills) {
-				skills.set(await getSkills(localStorage.token));
+				skills.set(await getSkills(localStorage.token).catch(embedOptional));
 			}
 			if (selectedModels.length !== 1 && !atSelectedModel) {
 				const comparedModels = selectedModels
@@ -1760,6 +1767,9 @@
 
 					eventConfirmationTitle = data.title;
 					eventConfirmationMessage = data.message;
+				} else if (type === 'execute' && isEmbedMode()) {
+					// sub2api-embed: tools may not run arbitrary JS in the page (design §5.2)
+					console.warn('execute event ignored in embed mode');
 				} else if (type === 'execute') {
 					eventCallback = cb;
 
@@ -3508,6 +3518,7 @@
 		if (done) {
 			message.done = true;
 			if (shared) return;
+			notifyBalanceChanged(); // sub2api-embed: one reply round finished
 			if (message.error) {
 				dismissContextCompactionToast();
 				bridge?.update();
@@ -4393,7 +4404,8 @@
 				errorMessage = $i18n.t(`Uh-oh! There was an issue with the response.`);
 			}
 
-			toast.error(`${errorMessage}`);
+			notifyBalanceChanged(); // sub2api-embed
+			toast.error(embedErrorToast(error, `${errorMessage}`));
 			responseMessage.error = {
 				content: error
 			};
@@ -4484,7 +4496,10 @@
 			);
 		}
 		history.messages[responseMessage.id] = responseMessage;
-		if (!responseFailed) toast.error(errorMessage);
+		if (!responseFailed) {
+			notifyBalanceChanged(); // sub2api-embed
+			toast.error(embedErrorToast(error, errorMessage));
+		}
 	};
 
 	const stopResponse = async (processQueue = true, messageId = history.currentId) => {

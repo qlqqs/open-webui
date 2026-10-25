@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { embedHides } from '$lib/embed/features'; // sub2api-embed
 	import { localStorage } from '$lib/embed/storage';
 	import { withBase } from '$lib/embed/paths';
 	import EditPencilIcon from '$lib/components/layout/Sidebar/icons/EditPencil.svelte';
@@ -1100,7 +1101,7 @@
 									</button>
 								</Tooltip>
 
-								{#if !readOnly && ($user?.role === 'admin' || ($user?.permissions?.chat?.tts ?? true))}
+								{#if !readOnly && !$embedHides('tts') && ($user?.role === 'admin' || ($user?.permissions?.chat?.tts ?? true))}
 									<Tooltip content={$i18n.t('Read Aloud')} placement="bottom">
 										<button
 											aria-label={$i18n.t('Read Aloud')}
@@ -1302,7 +1303,7 @@
 								{/if}
 
 								{#if (!readOnly && (!message.user_id || message.user_id === $user?.id)) || (shareMode === 'continue' && message.user_id === $user?.id)}
-									{#if !readOnly && !$temporaryChatEnabled && ($config?.features.enable_message_rating ?? true) && ($user?.role === 'admin' || ($user?.permissions?.chat?.rate_response ?? true))}
+									{#if !readOnly && !$temporaryChatEnabled && !$embedHides('rating') && ($config?.features.enable_message_rating ?? true) && ($user?.role === 'admin' || ($user?.permissions?.chat?.rate_response ?? true))}
 										<Tooltip content={$i18n.t('Good Response')} placement="bottom">
 											<button
 												aria-label={$i18n.t('Good Response')}

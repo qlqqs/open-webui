@@ -6,6 +6,7 @@
 	} from '$lib/utils/settings-access';
 	import { createEventDispatcher, onMount, getContext } from 'svelte';
 	import { getLanguages, changeLanguage } from '$lib/i18n';
+	import { embedHides } from '$lib/embed/features'; // sub2api-embed
 	const dispatch = createEventDispatcher();
 
 	import { config, models, settings, theme, user } from '$lib/stores';
@@ -223,6 +224,8 @@
 	</h2>
 
 	<div class="flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1.5">
+		<!-- sub2api-embed: theme and language follow the console -->
+		{#if !$embedHides('themeSelect')}
 		<UserSettingSection
 			title={$i18n.t('settings.personal.general.sections.webuiSettings.title')}
 			first
@@ -280,6 +283,7 @@
 				</div>
 			{/if}
 		</UserSettingSection>
+		{/if}
 
 		{#if canEditSystemPrompt}
 			<UserSettingSection title={$i18n.t('settings.personal.general.sections.systemPrompt.title')}>

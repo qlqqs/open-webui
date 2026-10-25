@@ -8,6 +8,9 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 
 	import Sidebar from '$lib/components/icons/Sidebar.svelte';
+	// sub2api-embed
+	import { embedMode } from '$lib/embed/mode';
+	import { et } from '$lib/embed/i18n';
 
 	const i18n = getContext('i18n');
 
@@ -69,6 +72,7 @@
 					<div
 						class="flex min-w-0 mr-1.5 items-center gap-0.5 md:gap-1 scrollbar-none overflow-x-auto w-fit text-center text-sm font-normal rounded-full bg-transparent py-1 touch-auto pointer-events-auto"
 					>
+						{#if !$embedMode}
 						<a
 							draggable="false"
 							class="min-w-fit px-1 text-sm {stripBase($page.url.pathname).includes('/admin/users')
@@ -85,6 +89,7 @@
 							href="{BASE}/admin/evaluations">{$i18n.t('Evaluations')}</a
 						>
 
+						{/if}
 						{#if $config?.features?.enable_functions}
 							<a
 								draggable="false"
@@ -94,6 +99,20 @@
 								href="{BASE}/admin/functions">{$i18n.t('Functions')}</a
 							>
 						{/if}
+						{#if $embedMode}
+							<!-- sub2api-embed: tools live in the workspace, tool servers in the settings modal -->
+							<a
+								draggable="false"
+								class="min-w-fit px-1 text-sm text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white transition select-none"
+								href="{BASE}/workspace/tools">{$et('admin.tools')}</a
+							>
+							<button
+								type="button"
+								class="min-w-fit px-1 text-sm text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white transition select-none"
+								on:click={() => showSettings.set('admin:integrations')}
+								>{$et('admin.toolServers')}</button
+							>
+						{:else}
 
 						<a
 							draggable="false"
@@ -106,6 +125,7 @@
 								showSettings.set('admin:general');
 							}}>{$i18n.t('Settings')}</a
 						>
+						{/if}
 					</div>
 				</div>
 			</div>

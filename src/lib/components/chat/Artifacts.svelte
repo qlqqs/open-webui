@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ArtifactFrame from '$lib/embed/ArtifactFrame.svelte'; // sub2api-embed
+	import { embedMode } from '$lib/embed/mode';
 	import { toast } from 'svelte-sonner';
 	import { onMount, getContext, createEventDispatcher } from 'svelte';
 	const i18n: any = getContext('i18n');
@@ -244,7 +246,21 @@
 			<div class=" h-full flex flex-col">
 				{#if contents.length > 0}
 					<div class="max-w-full w-full h-full">
-						{#if contents[selectedContentIdx].type === 'iframe'}
+						{#if contents[selectedContentIdx].type === 'iframe' && $embedMode}
+							<!-- sub2api-embed: srcdoc inherits the strict CSP; render in the sandbox page -->
+							<ArtifactFrame
+								bind:iframe={iframeElement}
+								title={$i18n.t('Content')}
+								html={injectCsp(contents[selectedContentIdx].content, $config?.ui?.iframe_csp ?? '')}
+								className="w-full border-0 h-full rounded-none"
+								sandbox="{($settings?.iframeSandboxAllowScripts ?? true)
+									? 'allow-scripts'
+									: ''}{($settings?.iframeSandboxAllowDownloads ?? true)
+									? ' allow-downloads'
+									: ''}{($settings?.iframeSandboxAllowForms ?? true) ? ' allow-forms' : ''}"
+								allowFullscreen
+							/>
+						{:else if contents[selectedContentIdx].type === 'iframe'}
 							<iframe
 								bind:this={iframeElement}
 								title={$i18n.t('Content')}

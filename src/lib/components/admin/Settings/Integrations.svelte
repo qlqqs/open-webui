@@ -26,6 +26,7 @@
 	import AddToolServerModal from '$lib/components/AddToolServerModal.svelte';
 	import AddTerminalServerModal from '$lib/components/AddTerminalServerModal.svelte';
 	import ExternalKnowledge from './ExternalKnowledge.svelte';
+	import { embedMode } from '$lib/embed/mode'; // sub2api-embed
 	import AdminSettingSection from './AdminSettingSection.svelte';
 	import AdminSettingRow from './AdminSettingRow.svelte';
 
@@ -135,10 +136,12 @@
 	};
 
 	onMount(async () => {
-		connectionsConfig = await getConnectionsConfig(localStorage.token);
+		// sub2api-embed: only tool servers are configurable; other config endpoints are blocked
+		connectionsConfig = $embedMode ? {} : await getConnectionsConfig(localStorage.token);
 		const res = await getToolServerConnections(localStorage.token);
 		servers = res.TOOL_SERVER_CONNECTIONS as ToolServerConnection[];
 
+		if ($embedMode) return;
 		try {
 			const terminalRes = await getTerminalServerConnections(localStorage.token);
 			if (terminalRes?.TERMINAL_SERVER_CONNECTIONS) {
@@ -238,6 +241,8 @@
 					</div>
 				</AdminSettingSection>
 
+				{#if !$embedMode}
+				<!-- sub2api-embed: terminals are an enterprise / code-execution feature -->
 				<AdminSettingSection title={$i18n.t('settings.admin.integrations.sections.terminal.title')}>
 					<div>
 						<div class="mb-2 flex items-center justify-between">
@@ -337,8 +342,10 @@
 						>
 					</div>
 				</AdminSettingSection>
+				{/if}
 			</fieldset>
 
+			{#if !$embedMode}
 			<AdminSettingSection title={$i18n.t('settings.admin.integrations.sections.knowledge.title')}>
 				<ExternalKnowledge />
 			</AdminSettingSection>
@@ -359,6 +366,7 @@
 					/>
 				</AdminSettingRow>
 			</AdminSettingSection>
+			{/if}
 		{:else}
 			<div class="flex h-full justify-center">
 				<div class="my-auto">

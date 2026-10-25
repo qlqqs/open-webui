@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { embedMode } from '$lib/embed/mode'; // sub2api-embed
 	import { localStorage } from '$lib/embed/storage';
 	import { withBase } from '$lib/embed/paths';
 	import DOMPurify from 'dompurify';
@@ -282,9 +283,12 @@
 						<div
 							class="flex items-center justify-center gap-3 text-xl sm:text-2xl text-center font-normal dark:text-gray-200"
 						>
-							<div>
-								{$i18n.t('Signing in to {{WEBUI_NAME}}', { WEBUI_NAME: $WEBUI_NAME })}
-							</div>
+							{#if !$embedMode}
+								<!-- sub2api-embed: silent sign-in inside the console -->
+								<div>
+									{$i18n.t('Signing in to {{WEBUI_NAME}}', { WEBUI_NAME: $WEBUI_NAME })}
+								</div>
+							{/if}
 
 							<div>
 								<Spinner className="size-5" />

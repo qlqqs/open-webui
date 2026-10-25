@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { embedHides } from '$lib/embed/features'; // sub2api-embed
 	import { localStorage } from '$lib/embed/storage';
 	import { canUseTemporaryChats, isSettingsAdmin } from '$lib/utils/settings-access';
 	import { config, settings, user } from '$lib/stores';
@@ -1725,6 +1726,8 @@
 		</p>
 	</div>
 
+	<!-- sub2api-embed: previews never get allow-same-origin inside the console -->
+	{#if !$embedHides('iframeSameOrigin')}
 	<div>
 		<div class={settingRowClass}>
 			<div id="iframe-sandbox-allow-same-origin-label" class={settingLabelClass}>
@@ -1747,6 +1750,7 @@
 			{$i18n.t('settings.personal.interface.iframeSandboxAllowSameOrigin.description')}
 		</p>
 	</div>
+	{/if}
 
 	<div>
 		<div class={settingRowClass}>

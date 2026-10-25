@@ -6,6 +6,8 @@
 </script>
 
 <script lang="ts">
+	import ArtifactFrame from '$lib/embed/ArtifactFrame.svelte'; // sub2api-embed
+	import { embedMode } from '$lib/embed/mode';
 	import { withBase } from '$lib/embed/paths';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { config } from '$lib/stores';
@@ -215,7 +217,20 @@ window.Chart = parent.Chart; // Chart previously assigned on parent
 	});
 </script>
 
-{#if iframeDoc}
+{#if iframeDoc && $embedMode}
+	<!-- sub2api-embed: srcdoc inherits the strict CSP; render in the sandbox page -->
+	<ArtifactFrame
+		bind:iframe
+		html={injectCsp(iframeDoc, $config?.ui?.iframe_csp ?? '')}
+		{title}
+		className={iframeClassName}
+		style={`${initialHeight ? `height:${initialHeight}px;` : ''}`}
+		{sandbox}
+		{allowFullscreen}
+		autoHeight
+		on:load={onLoad}
+	/>
+{:else if iframeDoc}
 	<iframe
 		bind:this={iframe}
 		srcdoc={injectCsp(iframeDoc, $config?.ui?.iframe_csp ?? '')}

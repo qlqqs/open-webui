@@ -1,4 +1,8 @@
 <script lang="ts">
+	// sub2api-embed
+	import { embedModelsError } from '$lib/embed/errors';
+	import { embedMode } from '$lib/embed/mode';
+	import GatewayErrorHint from '$lib/embed/GatewayErrorHint.svelte';
 	import { localStorage } from '$lib/embed/storage';
 	import { marked } from 'marked';
 	import Fuse from 'fuse.js';
@@ -1027,7 +1031,15 @@
 
 					<div class="group relative flex min-h-0 flex-1 flex-col">
 						{#if filteredItems.length === 0}
-							{#if items.length === 0 && $user?.role === 'admin'}
+							{#if $embedModelsError}
+								<!-- sub2api-embed: gateway refused the model list -->
+								<div class="px-3 py-2">
+									<GatewayErrorHint
+										mapped={$embedModelsError.mapped}
+										raw={$embedModelsError.raw}
+									/>
+								</div>
+							{:else if items.length === 0 && $user?.role === 'admin' && !$embedMode}
 								<div
 									class="my-2 flex w-full flex-col items-start justify-center px-4 py-3 text-start"
 								>

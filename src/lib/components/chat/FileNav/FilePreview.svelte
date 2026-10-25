@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ArtifactFrame from '$lib/embed/ArtifactFrame.svelte'; // sub2api-embed
+	import { embedMode } from '$lib/embed/mode';
 	import { withBase } from '$lib/embed/paths';
 	import { getContext, tick } from 'svelte';
 	import MarkdownDocument from './MarkdownDocument.svelte';
@@ -398,6 +400,19 @@
 			{#if overlay}
 				<div class="absolute top-0 left-0 right-0 bottom-0 z-10"></div>
 			{/if}
+			{#if $embedMode}
+				<!-- sub2api-embed: srcdoc inherits the strict CSP; render in the sandbox page -->
+				<ArtifactFrame
+					html={injectCsp(fileContent, $config?.ui?.iframe_csp ?? '')}
+					sandbox="{(allowScripts ?? $settings?.iframeSandboxAllowScripts ?? true)
+						? 'allow-scripts'
+						: ''}{($settings?.iframeSandboxAllowDownloads ?? true)
+						? ' allow-downloads'
+						: ''}{($settings?.iframeSandboxAllowForms ?? true) ? ' allow-forms' : ''}"
+					className="w-full h-full border-none bg-white"
+					title={$i18n.t('HTML Preview')}
+				/>
+			{:else}
 			<iframe
 				srcdoc={injectCsp(fileContent, $config?.ui?.iframe_csp ?? '')}
 				sandbox="{(allowScripts ?? $settings?.iframeSandboxAllowScripts ?? true)
@@ -410,6 +425,7 @@
 				class="w-full h-full border-none bg-white"
 				title={$i18n.t('HTML Preview')}
 			/>
+			{/if}
 		{:else if isHtml && showRaw}
 			<div class="absolute inset-0">
 				<FileCodeEditor

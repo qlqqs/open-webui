@@ -1,4 +1,8 @@
 <script lang="ts">
+	// sub2api-embed
+	import { et } from '$lib/embed/i18n';
+	import { showSettings } from '$lib/stores';
+	import { isEmbedMode } from '$lib/embed/mode';
 	import { localStorage } from '$lib/embed/storage';
 	import { withBase } from '$lib/embed/paths';
 	import { resolveLocalizedResource, resolveLocalizedFunction } from '$lib/utils/localizedContent';
@@ -79,6 +83,7 @@
 	export let showWebSearchButton = false;
 	export let webSearchEnabled = false;
 	export let showImageGenerationButton = false;
+	export let embedImageKeyMissing = false; // sub2api-embed
 	export let imageGenerationEnabled = false;
 	export let showCodeInterpreterButton = false;
 	export let codeInterpreterEnabled = false;
@@ -222,7 +227,10 @@
 		searchedSkillQuery = query;
 
 		if ($_skills === null) {
-			await _skills.set(await getSkills(localStorage.token));
+			// sub2api-embed: skills are removed in embed mode (404) — not an unhandled rejection
+			await _skills.set(
+				await getSkills(localStorage.token).catch((e) => (isEmbedMode() ? [] : Promise.reject(e)))
+			);
 		}
 		if (requestId !== skillRequestId) return;
 		const terminalItems = await getTerminalSkillItems();
@@ -499,6 +507,22 @@
 								</div>
 							</button>
 						</Tooltip>
+					{/if}
+
+					{#if embedImageKeyMissing}
+						<!-- sub2api-embed: no image-capable key (PRD R5.6) -->
+						<button
+							class="flex w-full justify-between gap-2 items-center h-[1.6875rem] px-2 text-[0.8125rem] font-normal cursor-pointer rounded-xl text-gray-500 hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
+							on:click={() => {
+								show = false;
+								showSettings.set('sub2api');
+							}}
+						>
+							<div class="flex flex-1 gap-2 items-center truncate">
+								<div class="shrink-0"><Photo className="size-3.5" strokeWidth="1.5" /></div>
+								<div class="truncate">{$et('image.setup')}</div>
+							</div>
+						</button>
 					{/if}
 
 					{#if showCodeInterpreterButton}

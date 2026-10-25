@@ -1,4 +1,5 @@
 <script>
+	import { embedHidesNow } from '$lib/embed/features'; // sub2api-embed
 	import { onMount, onDestroy } from 'svelte';
 
 	let map;
@@ -28,10 +29,12 @@
 			];
 		}
 
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution:
-				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-		}).addTo(map);
+		// sub2api-embed: no third-party tiles (CSP img-src 'self'); markers still work
+		if (!embedHidesNow('osmTiles'))
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution:
+					'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+			}).addTo(map);
 
 		const setMarkers = (points) => {
 			if (map) {

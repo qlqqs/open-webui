@@ -54,6 +54,14 @@
 	import '../tailwind.css';
 	import '../app.css';
 	import 'tippy.js/dist/tippy.css';
+	// sub2api-embed: console theme + embed wiring (no-ops outside embed mode)
+	import '$lib/embed/theme.css';
+	import { embedBrandName, initEmbedApp } from '$lib/embed/app';
+	import { chatRevoked } from '$lib/embed/bridge';
+	import { et } from '$lib/embed/i18n';
+	import { installEmbedFetch } from '$lib/embed/fetch';
+	// sub2api-embed: must wrap the native fetch before the 401 handler below captures it
+	installEmbedFetch();
 
 	import { executeToolServer, getBackendConfig, getModels, getVersion } from '$lib/apis';
 	import { getSessionUser, updateUserTimezone, userSignOut } from '$lib/apis/auths';
@@ -1348,11 +1356,14 @@
 		if (backendConfig) {
 			// Save Backend Status to Store
 			await config.set(backendConfig);
+			// sub2api-embed: bridge / theme / key headers; hidden branding only when the deployment
+			// meets the LICENSE exception (S2A_HIDE_BRANDING=1, <= 50 users, PRD constraints)
+			initEmbedApp(backendConfig);
 			// LICENSE covers this Open WebUI branding surface, including name, logo,
 			// visual, textual, symbolic identifiers, metadata, and surrounding UI.
 			// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 			// https://docs.openwebui.com/license.
-			await WEBUI_NAME.set(backendConfig.name);
+			await WEBUI_NAME.set(embedBrandName(backendConfig, backendConfig.name));
 
 			if ($config) {
 				await setupSocket($config.features?.enable_websocket ?? true);
@@ -1497,7 +1508,12 @@
 	</div>
 {/if}
 
-{#if loaded}
+{#if $chatRevoked}
+	<!-- sub2api-embed: the console revoked the session (sign-out / account switch) -->
+	<div class="h-screen w-full flex items-center justify-center text-sm text-gray-400">
+		{$et('revoked')}
+	</div>
+{:else if loaded}
 	{#if mfaManagement}
 		<MfaManagement flow={mfaManagement} onClose={() => (mfaManagement = null)} />
 	{:else if $isApp}

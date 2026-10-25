@@ -52,6 +52,10 @@
 	import AccountPending from '$lib/components/layout/Overlay/AccountPending.svelte';
 	import UpdateInfoToast from '$lib/components/layout/UpdateInfoToast.svelte';
 	import Spinner from '$lib/components/common/Spinner.svelte';
+	// sub2api-embed
+	import { embedMode } from '$lib/embed/mode';
+	import { embedAfterUserSettings } from '$lib/embed/app';
+	import { isRouteBlocked } from '$lib/embed/features';
 	import { loadKeybindings, matchKeybinding, Shortcut } from '$lib/shortcuts';
 
 	const i18n = getContext('i18n');
@@ -265,10 +269,15 @@
 		clearChatInputStorage();
 		try {
 			await Promise.all([
-				setBanners().catch((e) => console.error('Failed to load banners:', e)),
+				// sub2api-embed: banners are an admin config surface, blocked in embed mode
+				($embedMode ? Promise.resolve() : setBanners()).catch((e) =>
+					console.error('Failed to load banners:', e)
+				),
 				setTools().catch((e) => console.error('Failed to load tools:', e)),
 				setUserSettings(async () => {
 					await setModels().catch((e) => console.error('Failed to load models:', e));
+					// sub2api-embed: key list, prices, guide to 「模型与密钥」 when no key is selected
+					embedAfterUserSettings().catch((e) => console.error('sub2api keys:', e));
 				})
 			]);
 		} catch (e) {
@@ -391,7 +400,7 @@
 		};
 		setupKeyboardShortcuts();
 
-		if ($user?.role === 'admin' && ($settings?.showChangelog ?? true)) {
+		if ($user?.role === 'admin' && ($settings?.showChangelog ?? true) && !$embedMode) {
 			showChangelog.set($settings?.version !== $config.version);
 		}
 
@@ -452,6 +461,11 @@
 		void openSettingsFromUrl();
 	}
 
+	// sub2api-embed: routes of removed features go back to the chat
+	$: if (loaded && $embedMode && isRouteBlocked(stripBase($page.url.pathname), true)) {
+		goto('/', { replaceState: true });
+	}
+
 	$: if (loaded && ($user === undefined || $user === null)) {
 		void gotoAuth();
 	}
@@ -467,7 +481,10 @@
 </script>
 
 <SettingsModal bind:show={$showSettings} />
-<ChangelogModal bind:show={$showChangelog} />
+{#if !$embedMode}
+	<!-- sub2api-embed: no changelog inside the console -->
+	<ChangelogModal bind:show={$showChangelog} />
+{/if}
 
 {#if WEBUI_BUILD_CHANNEL === 'main' && version && compareVersion(version.latest, version.current) && ($settings?.showUpdateToast ?? true)}
 	<div class=" absolute bottom-8 right-8 z-50" in:fade={{ duration: 100 }}>

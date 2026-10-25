@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ArtifactFrame from '$lib/embed/ArtifactFrame.svelte'; // sub2api-embed
+	import { embedMode } from '$lib/embed/mode';
 	import { withBase } from '$lib/embed/paths';
 	import { getContext, onMount, tick } from 'svelte';
 	import Modal from '$lib/components/common/Modal.svelte';
@@ -214,7 +216,18 @@
 								{/if}
 							</div>
 
-							{#if document.metadata?.html}
+							{#if document.metadata?.html && $embedMode}
+								<!-- sub2api-embed: srcdoc inherits the strict CSP; render in the sandbox page -->
+								<ArtifactFrame
+									className="w-full border-0 h-auto rounded-none"
+									sandbox="{($settings?.iframeSandboxAllowScripts ?? true)
+										? 'allow-scripts'
+										: ''}{($settings?.iframeSandboxAllowForms ?? true)
+										? ' allow-forms'
+										: ''}{($settings?.iframeSandboxAllowDownloads ?? true) ? ' allow-downloads' : ''}"
+									html={injectCsp(document.document, $config?.ui?.iframe_csp ?? '')}
+								/>
+							{:else if document.metadata?.html}
 								<iframe
 									class="w-full border-0 h-auto rounded-none"
 									sandbox="{($settings?.iframeSandboxAllowScripts ?? true)

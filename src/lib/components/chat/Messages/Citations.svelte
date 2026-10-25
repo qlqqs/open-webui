@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { siteFavicon } from '$lib/embed/links'; // sub2api-embed
+	import { embedMode } from '$lib/embed/mode';
 	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { embed, showControls, showEmbeds } from '$lib/stores';
@@ -186,7 +188,7 @@
 				<div class="flex -space-x-1 items-center">
 					{#each urlCitations.slice(0, 3) as citation, idx}
 						<img
-							src="https://www.google.com/s2/favicons?sz=32&domain={citation.source.name}"
+							src={withBase(siteFavicon(citation.source.name, $embedMode))}
 							alt="favicon"
 							class="size-4 rounded-full shrink-0 border border-white dark:border-gray-850 bg-white dark:bg-gray-900"
 							on:error={(e) => {

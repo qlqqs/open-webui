@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelPrices } from '$lib/embed/keys'; // sub2api-embed
 	import { withBase } from '$lib/embed/paths';
 	import { marked } from 'marked';
 
@@ -192,6 +193,17 @@
 				{/if}
 
 				<!-- {JSON.stringify(item.info)} -->
+
+				<!-- sub2api-embed: unit price of the selected key's group (same wording as the model plaza) -->
+				{#if $modelPrices[item.model?.info?.base_model_id ?? item.model?.id]}
+					{@const priceText = $modelPrices[item.model?.info?.base_model_id ?? item.model?.id]}
+					<Tooltip content={priceText} className="min-w-0">
+						<span
+							class="line-clamp-1 max-w-[14rem] text-[0.6875rem] font-normal text-gray-500 dark:text-gray-400"
+							data-testid="s2a-model-price">{priceText}</span
+						>
+					</Tooltip>
+				{/if}
 
 				{#if (item?.model?.tags ?? []).length > 0}
 					{#key item.model.id}

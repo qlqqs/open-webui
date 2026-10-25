@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { hideBranding } from '$lib/embed/mode'; // sub2api-embed
 	import Fuse from 'fuse.js';
 	import Bolt from '$lib/components/icons/Bolt.svelte';
 	import { getContext } from 'svelte';
@@ -66,8 +67,9 @@
 	{#if filteredPrompts.length > 0}
 		<Bolt />
 		{$i18n.t('Suggested')}
-	{:else}
+	{:else if !$hideBranding}
 		<!-- Keine Vorschläge -->
+		<!-- sub2api-embed: name + version line is branding; omitted when branding is hidden -->
 
 		<div
 			class="flex w-full {$settings?.landingPageMode === 'chat'

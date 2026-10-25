@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { searchQueryLink, siteFavicon } from '$lib/embed/links'; // sub2api-embed
+	import { embedMode } from '$lib/embed/mode';
 	import { withBase } from '$lib/embed/paths';
 	import { safeLinkUrl } from '$lib/utils';
 
@@ -27,7 +29,7 @@
 	>
 		{#if status?.query}
 			<a
-				href="https://www.google.com/search?q={status.query}"
+				href={withBase(searchQueryLink(status.query, $embedMode))}
 				target="_blank"
 				class="flex w-full items-center p-1 px-3 group/item justify-between text-gray-800 dark:text-gray-300 font-normal! no-underline!"
 			>
@@ -69,7 +71,7 @@
 					<div class=" flex justify-center items-center gap-3">
 						<div class="w-fit">
 							<img
-								src="https://www.google.com/s2/favicons?sz=32&domain={item.link}"
+								src={withBase(siteFavicon(item.link, $embedMode))}
 								alt="{item?.title ?? item.link} favicon"
 								class="size-3.5"
 							/>
@@ -109,7 +111,7 @@
 					<div class=" flex justify-center items-center gap-3">
 						<div class="w-fit">
 							<img
-								src="https://www.google.com/s2/favicons?sz=32&domain={url}"
+								src={withBase(siteFavicon(url, $embedMode))}
 								alt="{url} favicon"
 								class="size-3.5"
 							/>

@@ -1,3 +1,5 @@
+import { isEmbedMode } from '$lib/embed/mode';
+import { setEmbedModelsError } from '$lib/embed/errors';
 import { localStorage } from '$lib/embed/storage';
 import { get } from 'svelte/store';
 import { config } from '$lib/stores';
@@ -55,6 +57,13 @@ export const getModels = async (
 			console.error(err);
 			return null;
 		});
+
+	// sub2api-embed: a failing gateway model list (no balance / unusable key) is shown as a hint
+	// next to the input instead of an empty dropdown; callers get an empty list, not a rejection
+	if (isEmbedMode() && !base) {
+		setEmbedModelsError(error);
+		if (error) return [];
+	}
 
 	if (error) {
 		throw error;

@@ -62,6 +62,12 @@
 	import AdminImages from '$lib/components/admin/Settings/Images.svelte';
 	import AdminPipelines from '$lib/components/admin/Settings/Pipelines.svelte';
 	import AdminDatabase from '$lib/components/admin/Settings/Database.svelte';
+	// sub2api-embed: 「模型与密钥」 tab, tab filter, LICENSE small print
+	import KeysSettings from '$lib/embed/KeysSettings.svelte';
+	import LicenseFooter from '$lib/embed/LicenseFooter.svelte';
+	import { embedMode } from '$lib/embed/mode';
+	import { filterSettingsTabs } from '$lib/embed/features';
+	import { et } from '$lib/embed/i18n';
 
 	const i18n: Writable<any> = getContext('i18n');
 
@@ -147,6 +153,7 @@
 		notifications: $i18n.t('Basics'),
 		shortcuts: $i18n.t('Basics'),
 		connections: $i18n.t('Services'),
+		sub2api: $i18n.t('Services'),
 		tools: $i18n.t('Services'),
 		personalization: $i18n.t('Preferences'),
 		audio: $i18n.t('Preferences'),
@@ -218,6 +225,10 @@
 			title: $i18n.t('settings.personal.connections.title'),
 			searchPrefixes: ['settings.personal.connections.']
 		},
+		// sub2api-embed: only offered in embed mode (filterSettingsTabs)
+		...($embedMode
+			? [{ id: 'sub2api', titleKey: 'Models & Keys', title: $et('settings.tab'), searchPrefixes: [] }]
+			: []),
 		{
 			id: 'tools',
 			titleKey: 'settings.personal.tools.title',
@@ -414,8 +425,9 @@
 			return true;
 		});
 
-		return (
-			$user?.role === 'admin' ? [...personalSettings, ...administratorTabs] : personalSettings
+		return filterSettingsTabs(
+			$user?.role === 'admin' ? [...personalSettings, ...administratorTabs] : personalSettings,
+			$embedMode // sub2api-embed
 		).filter(
 			(tab) =>
 				(tab.id !== 'admin:analytics' || ($config?.features?.enable_admin_analytics ?? true)) &&
@@ -647,6 +659,20 @@
 								<span>{$i18n.t('settings.personal.connections.title')}</span>
 							</button>
 						{/if}
+					{:else if tabId === 'sub2api'}
+						<!-- sub2api-embed -->
+						<button
+							role="tab"
+							aria-controls="tab-sub2api"
+							aria-selected={selectedTab === 'sub2api'}
+							class={tabButtonClass(selectedTab === 'sub2api')}
+							on:click={() => {
+								selectTab('sub2api');
+							}}
+						>
+							<Link className="size-3.5" strokeWidth="2" />
+							<span>{$et('settings.tab')}</span>
+						</button>
 					{:else if tabId === 'tools'}
 						{#if $user?.role === 'admin' || ($user?.role === 'user' && $user?.permissions?.features?.direct_tool_servers)}
 							<button
@@ -827,6 +853,8 @@
 						toast.success($i18n.t('Settings saved successfully!'));
 					}}
 				/>
+			{:else if selectedTab === 'sub2api'}
+				<KeysSettings />
 			{:else if selectedTab === 'tools'}
 				<Integrations
 					saveSettings={async (updated: Record<string, any>) => {
@@ -922,5 +950,8 @@
 				/>
 			{/if}
 		</div>
+		{#if $embedMode}
+			<LicenseFooter />
+		{/if}
 	</div>
 </Modal>

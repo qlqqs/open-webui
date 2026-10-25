@@ -66,6 +66,10 @@
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
 
 	import UserMenu from './Sidebar/UserMenu.svelte';
+	// sub2api-embed
+	import SidebarSettings from '$lib/embed/SidebarSettings.svelte';
+	import { embedMode } from '$lib/embed/mode';
+	import { EMBED_SIDEBAR_ITEMS, isSidebarItemAllowed } from '$lib/embed/features';
 	import ChatItem from './Sidebar/ChatItem.svelte';
 	import Spinner from '../common/Spinner.svelte';
 	import Loader from '../common/Loader.svelte';
@@ -156,9 +160,13 @@
 		folderRegistry[folder.id]?.setFolderItems?.();
 	};
 
-	$: pinnedItems = $settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS;
+	// sub2api-embed: without the avatar menu every allowed item stays pinned
+	$: pinnedItems = $embedMode
+		? [...EMBED_SIDEBAR_ITEMS]
+		: ($settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS);
 
 	$: isMenuItemVisible = (id) => {
+		if (!isSidebarItemAllowed(id, $embedMode)) return false; // sub2api-embed
 		switch (id) {
 			case 'notes':
 				return (
@@ -1084,7 +1092,10 @@
 			<div>
 				<div>
 					<div class=" flex justify-center items-center">
-						{#if $user !== undefined && $user !== null}
+						{#if $embedMode}
+							<!-- sub2api-embed: 「设置」 button instead of the avatar menu -->
+							<SidebarSettings collapsed />
+						{:else if $user !== undefined && $user !== null}
 							<UserMenu role={$user?.role} profile={$config?.features?.enable_user_status ?? true}>
 								<button
 									type="button"
@@ -1724,7 +1735,10 @@
 						class=" sidebar-bg-gradient-to-t bg-linear-to-t from-gray-50 dark:from-gray-950 to-transparent from-50% pointer-events-none absolute inset-0 -z-10 -mt-6"
 					></div>
 					<div class="flex flex-col">
-						{#if $user !== undefined && $user !== null}
+						{#if $embedMode}
+							<!-- sub2api-embed: 「设置」 button instead of the avatar menu -->
+							<SidebarSettings />
+						{:else if $user !== undefined && $user !== null}
 							<UserMenu
 								role={$user?.role}
 								profile={$config?.features?.enable_user_status ?? true}

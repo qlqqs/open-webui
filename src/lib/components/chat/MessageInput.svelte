@@ -1,4 +1,11 @@
 <script lang="ts">
+	// sub2api-embed
+	import { embedHides } from '$lib/embed/features';
+	import { embedMode } from '$lib/embed/mode';
+	import { resolvedKeys } from '$lib/embed/keys';
+	import { et } from '$lib/embed/i18n';
+	import { embedModelsError } from '$lib/embed/errors';
+	import GatewayErrorHint from '$lib/embed/GatewayErrorHint.svelte';
 	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import { stripBase, withBase } from '$lib/embed/paths';
 	import type { TerminalContext } from '$lib/types';
@@ -893,7 +900,16 @@
 	$: showImageGenerationButton =
 		selectedModelIds.length === imageGenerationCapableModels.length &&
 		$config?.features?.enable_image_generation &&
-		($_user.role === 'admin' || $_user?.permissions?.features?.image_generation);
+		($_user.role === 'admin' || $_user?.permissions?.features?.image_generation) &&
+		(!$embedMode || !!$resolvedKeys?.imageKey); // sub2api-embed: needs an image-capable key (R5.6)
+
+	// sub2api-embed: image generation exists but no key can pay for it → hint in the menu
+	$: embedImageKeyMissing =
+		$embedMode &&
+		!showImageGenerationButton &&
+		!!$config?.features?.enable_image_generation &&
+		$resolvedKeys !== null &&
+		!$resolvedKeys.imageKey;
 
 	let showCodeInterpreterButton = false;
 	$: showCodeInterpreterButton =
@@ -1233,6 +1249,11 @@
 					return imageUrl;
 				};
 
+				// sub2api-embed: heic2any needs eval, which the console CSP forbids → explain instead
+				if (isHeicImage(file) && $embedMode) {
+					toast.error($et('upload.heic'));
+					return;
+				}
 				const imageFile = isHeicImage(file) ? await convertHeicToJpeg(file) : file;
 				let reader = new FileReader();
 
@@ -2005,6 +2026,18 @@
 							</div>
 						{/if}
 
+						{#if $embedModelsError}
+							<!-- sub2api-embed: why the model list is empty (no balance, unusable key …) -->
+							<div
+								class="mb-2 mx-1 rounded-2xl border border-gray-100 dark:border-gray-850 px-3 py-2 text-left"
+							>
+								<GatewayErrorHint
+									mapped={$embedModelsError.mapped}
+									raw={$embedModelsError.raw}
+								/>
+							</div>
+						{/if}
+
 						<div
 							id="message-input-container"
 							class="flex-1 flex flex-col relative w-full shadow-lg rounded-3xl border {$temporaryChatEnabled
@@ -2414,7 +2447,7 @@
 										</button>
 									</InputMenu>
 
-									{#if showWebSearchButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
+									{#if showWebSearchButton || showImageGenerationButton || embedImageKeyMissing || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
 										<div
 											class="flex self-center w-[0.0625rem] h-4 mx-1 bg-gray-200/50 dark:bg-gray-800/50 shrink-0"
 										/>
@@ -2424,6 +2457,7 @@
 											{toggleFilters}
 											{showWebSearchButton}
 											{showImageGenerationButton}
+											{embedImageKeyMissing}
 											{showCodeInterpreterButton}
 											bind:selectedToolIds
 											bind:selectedSkillIds
@@ -2750,7 +2784,7 @@
 										</div>
 									{:else}
 										{#if !history?.currentId || history.messages[history.currentId]?.done == true}
-											{#if $_user?.role === 'admin' || ($_user?.permissions?.chat?.stt ?? true)}
+											{#if !$embedHides('mic') && ($_user?.role === 'admin' || ($_user?.permissions?.chat?.stt ?? true))}
 												<!-- {$i18n.t('Record voice')} -->
 												<Tooltip content={$i18n.t('Dictate')}>
 													<button
@@ -2791,7 +2825,7 @@
 											{/if}
 										{/if}
 
-										{#if callEnabled && !embedded && prompt === '' && files.length === 0 && ($_user?.role === 'admin' || ($_user?.permissions?.chat?.call ?? true))}
+										{#if !$embedHides('call') && callEnabled && !embedded && prompt === '' && files.length === 0 && ($_user?.role === 'admin' || ($_user?.permissions?.chat?.call ?? true))}
 											<div class=" flex items-center">
 												<!-- {$i18n.t('Call')} -->
 												<Tooltip

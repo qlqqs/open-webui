@@ -24,6 +24,7 @@
 	import Sidebar from '$lib/components/icons/Sidebar.svelte';
 	import SplitCreateButton from '$lib/components/common/SplitCreateButton.svelte';
 	import { formatNumber } from '$lib/utils';
+	import { embedMode } from '$lib/embed/mode'; // sub2api-embed
 
 	const i18n = getContext<Writable<i18nType>>('i18n');
 
@@ -49,9 +50,12 @@
 
 	const loadWorkspaceCounts = async () => {
 		const canViewModels = $user?.role === 'admin' || $user?.permissions?.workspace?.models;
-		const canViewKnowledge = $user?.role === 'admin' || $user?.permissions?.workspace?.knowledge;
+		// sub2api-embed: knowledge and skills are removed in embed mode
+		const canViewKnowledge =
+			!$embedMode && ($user?.role === 'admin' || $user?.permissions?.workspace?.knowledge);
 		const canViewPrompts = $user?.role === 'admin' || $user?.permissions?.workspace?.prompts;
-		const canViewSkills = $user?.role === 'admin' || $user?.permissions?.workspace?.skills;
+		const canViewSkills =
+			!$embedMode && ($user?.role === 'admin' || $user?.permissions?.workspace?.skills);
 		const canViewTools =
 			$config?.features?.enable_tools &&
 			($user?.role === 'admin' || $user?.permissions?.workspace?.tools);
@@ -167,7 +171,7 @@
 							</a>
 						{/if}
 
-						{#if $user?.role === 'admin' || $user?.permissions?.workspace?.knowledge}
+						{#if !$embedMode && ($user?.role === 'admin' || $user?.permissions?.workspace?.knowledge)}
 							<a
 								draggable="false"
 								aria-current={activeWorkspaceSection === 'knowledge' ? 'page' : null}
@@ -201,7 +205,7 @@
 							</a>
 						{/if}
 
-						{#if $user?.role === 'admin' || $user?.permissions?.workspace?.skills}
+						{#if !$embedMode && ($user?.role === 'admin' || $user?.permissions?.workspace?.skills)}
 							<a
 								draggable="false"
 								aria-current={activeWorkspaceSection === 'skills' ? 'page' : null}
