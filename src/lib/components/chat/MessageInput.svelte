@@ -9,6 +9,7 @@
 	import GatewayErrorHint from '$lib/embed/GatewayErrorHint.svelte';
 	import ReasoningPicker from '$lib/embed/ReasoningPicker.svelte';
 	import { reasoningModelId, syncModelReasoning } from '$lib/embed/reasoning';
+	import { composerFeatures, setComposerFeature } from '$lib/embed/composer-features';
 	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import { stripBase, withBase } from '$lib/embed/paths';
 	import type { TerminalContext } from '$lib/types';
@@ -917,6 +918,29 @@
 		!!$config?.features?.enable_image_generation &&
 		$resolvedKeys !== null &&
 		!$resolvedKeys.imageKey;
+
+	// sub2api-embed: 联网搜索 / 图片生成 are standalone composer buttons, not integrations menu items
+	$: embedFeatureButtons =
+		$embedMode && (showWebSearchButton || showImageGenerationButton || embedImageKeyMissing);
+	$: menuWebSearchButton = showWebSearchButton && !$embedMode;
+	$: menuImageGenerationButton = showImageGenerationButton && !$embedMode;
+	// Upstream clears both on new chat / chat switch / model change / Esc; here they follow the
+	// remembered choice, and are off while unavailable (e.g. no image-capable key).
+	$: if ($embedMode) {
+		const web = showWebSearchButton && $composerFeatures.web_search;
+		const image = showImageGenerationButton && $composerFeatures.image_generation;
+		if (webSearchEnabled !== web) webSearchEnabled = web;
+		if (imageGenerationEnabled !== image) imageGenerationEnabled = image;
+	}
+
+	const toggleEmbedWebSearch = () => {
+		const next = !webSearchEnabled;
+		setComposerFeature('web_search', next);
+		onWebSearchToggle(next);
+	};
+
+	const toggleEmbedImageGeneration = () =>
+		setComposerFeature('image_generation', !imageGenerationEnabled);
 
 	let showCodeInterpreterButton = false;
 	$: showCodeInterpreterButton =
@@ -2441,7 +2465,7 @@
 										</button>
 									</InputMenu>
 
-									{#if showWebSearchButton || showImageGenerationButton || embedImageKeyMissing || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
+									{#if menuWebSearchButton || menuImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
 										<div
 											class="flex self-center w-[0.0625rem] h-4 mx-1 bg-gray-200/50 dark:bg-gray-800/50 shrink-0"
 										/>
@@ -2449,9 +2473,8 @@
 										<IntegrationsMenu
 											selectedModels={selectedModelIds}
 											{toggleFilters}
-											{showWebSearchButton}
-											{showImageGenerationButton}
-											{embedImageKeyMissing}
+											showWebSearchButton={menuWebSearchButton}
+											showImageGenerationButton={menuImageGenerationButton}
 											{showCodeInterpreterButton}
 											bind:selectedToolIds
 											bind:selectedSkillIds
@@ -2491,6 +2514,54 @@
 												<Component className="size-4.5" strokeWidth="1.5" />
 											</button>
 										</IntegrationsMenu>
+									{/if}
+
+									{#if embedFeatureButtons}
+										<!-- sub2api-embed: 联网搜索 / 图片生成 toggles, remembered across chats -->
+										<div class="flex items-center gap-1 shrink-0 ml-1">
+											{#if showWebSearchButton}
+												<Tooltip content={$et('composer.webSearchHint')} placement="top">
+													<button
+														type="button"
+														data-testid="s2a-web-search-toggle"
+														aria-pressed={webSearchEnabled}
+														class="s2a-feature-toggle"
+														class:s2a-feature-toggle-on={webSearchEnabled}
+														on:click|preventDefault={toggleEmbedWebSearch}
+													>
+														<GlobeAlt className="size-4" strokeWidth="1.75" />
+														<span class="hidden sm:inline">{$et('composer.webSearch')}</span>
+													</button>
+												</Tooltip>
+											{/if}
+											{#if showImageGenerationButton}
+												<Tooltip content={$et('composer.imageGenerationHint')} placement="top">
+													<button
+														type="button"
+														data-testid="s2a-image-generation-toggle"
+														aria-pressed={imageGenerationEnabled}
+														class="s2a-feature-toggle"
+														class:s2a-feature-toggle-on={imageGenerationEnabled}
+														on:click|preventDefault={toggleEmbedImageGeneration}
+													>
+														<Photo className="size-4" strokeWidth="1.75" />
+														<span class="hidden sm:inline">{$et('composer.imageGeneration')}</span>
+													</button>
+												</Tooltip>
+											{:else if embedImageKeyMissing}
+												<Tooltip content={$et('image.needKey')} placement="top">
+													<button
+														type="button"
+														data-testid="s2a-image-generation-toggle"
+														class="s2a-feature-toggle s2a-feature-toggle-unavailable"
+														on:click|preventDefault={() => showSettings.set('sub2api')}
+													>
+														<Photo className="size-4" strokeWidth="1.75" />
+														<span class="hidden sm:inline">{$et('composer.imageGeneration')}</span>
+													</button>
+												</Tooltip>
+											{/if}
+										</div>
 									{/if}
 
 									{#if hasChatVariables}
@@ -2648,7 +2719,8 @@
 											{/if}
 										{/each}
 
-										{#if webSearchEnabled && showWebSearchButton}
+										<!-- sub2api-embed: replaced by the standalone toggles -->
+										{#if webSearchEnabled && showWebSearchButton && !$embedMode}
 											<Tooltip content={$i18n.t('Web Search')} placement="top">
 												<button
 													on:click|preventDefault={() => (webSearchEnabled = !webSearchEnabled)}
@@ -2666,7 +2738,8 @@
 											</Tooltip>
 										{/if}
 
-										{#if imageGenerationEnabled && showImageGenerationButton}
+										<!-- sub2api-embed: replaced by the standalone toggles -->
+										{#if imageGenerationEnabled && showImageGenerationButton && !$embedMode}
 											<Tooltip content={$i18n.t('Image')} placement="top">
 												<button
 													on:click|preventDefault={() =>

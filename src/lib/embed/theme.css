@@ -266,3 +266,38 @@ html.s2a-hide-branding img.sidebar-new-chat-icon + svg {
 html.dark .s2a-key-reason {
 	color: #fbbf24;
 }
+/* Composer 「联网搜索」/「图片生成」 toggles: outlined when off, brand-tinted when on. */
+.s2a-feature-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	height: 1.875rem;
+	border: 1px solid var(--s2a-line, #e5e8ee);
+	border-radius: 9999px;
+	padding: 0 0.625rem;
+	font-size: 0.8125rem;
+	white-space: nowrap;
+	color: var(--s2a-text, #475569);
+	background: transparent;
+	transition:
+		color 0.15s,
+		background-color 0.15s,
+		border-color 0.15s;
+}
+.s2a-feature-toggle:hover {
+	background: var(--s2a-tint, #f7f8fa);
+}
+.s2a-feature-toggle:focus-visible {
+	outline: 2px solid var(--s2a-blue, #1d4eff);
+	outline-offset: 1px;
+}
+.s2a-feature-toggle-on,
+.s2a-feature-toggle-on:hover {
+	color: var(--s2a-blue, #1d4eff);
+	border-color: color-mix(in srgb, var(--s2a-blue, #1d4eff) 35%, transparent);
+	background: var(--s2a-blue-soft, #edf2ff);
+}
+.s2a-feature-toggle-unavailable {
+	color: var(--s2a-muted, #7a8699);
+	border-style: dashed;
+}

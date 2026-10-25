@@ -54,6 +54,7 @@
 | `app.ts` | 上游布局调用的入口：`initEmbedApp`、`embedAfterUserSettings`、`embedBrandName`、`embedErrorToast` |
 | `i18n.ts` | 嵌入专用文案（zh-CN / en-US），不改上游语言包 |
 | `reasoning.ts` / `ReasoningPicker.svelte` | 输入框「思考强度」胶囊（§8） |
+| `composer-features.ts` | 输入框「联网搜索」「图片生成」开关的记忆（§8） |
 | `KeysSettings.svelte` / `SidebarSettings.svelte` / `LicenseFooter.svelte` / `GatewayErrorHint.svelte` | 组件 |
 
 ## 4. 存储
@@ -117,7 +118,8 @@ sub2api 对这个精确路径下发独立 CSP（允许内联脚本、`connect-sr
 - 模型选择器每行显示 `price_text`（预设助手按其 `base_model_id` 取价）。
 - 模型列表加载失败（contract D：`/api/models` 返回网关状态码与 `{"detail","s2a_gateway_error":{status,code,message}}`，如余额不足、Key 无效）：嵌入模式下 `getModels` 不再抛出，而是返回空列表并写入 `embedModelsError`（`errors.ts`）；输入框上方与模型下拉的空状态显示与对话错误相同的提示（余额不足 → 去充值，Key 不可用 → 去设置）。下一次成功加载时提示消失。挂接点：`lib/apis/index.ts` `getModels`、`chat/MessageInput.svelte`、`chat/ModelSelector/Selector.svelte`。
 - 思考强度（仿 ChatGPT）：输入框模型名右侧的胶囊，未选时显示「思考强度」，选后显示档位名；点开是档位名加横向滑条（左低右高，拖动 / 点击吸附到档位，方向键、Home / End 可调），点档位名旁的「›」切到档位列表（标注「默认」与计费倍率）。档位来自 `GET /_chat/__sub2api/model-reasoning`（按对话 Key 与当前模型列表批量取，同一 Key + 列表不重复请求），没有可选档位的模型不显示胶囊。选择按模型存在 `owui:s2a:reasoning`，发送时作为 `params.reasoning_effort`（预设助手按 `base_model_id`）；已不在可选档位里的旧选择不发送，由网关用默认档。挂接点：`chat/MessageInput.svelte`（胶囊与拉取）、`chat/Chat.svelte`（请求参数）。
-- 生图开关（PRD R5.6）：有可用生图 Key，或对话 Key 本身支持生图时才显示；否则输入框扩展菜单里显示「去设置生图 Key」。
+- 「联网搜索」「图片生成」：输入框加号右侧两个独立开关（不再放在扩展菜单里），默认都关。打开表示把对应工具交给模型，由模型自行决定是否搜索 / 生图。选择存在 `owui:s2a:features`，新对话、切换对话、换模型、刷新和 Esc 都不会清掉（上游会清）；当前不可用时请求里按关处理，恢复可用后回到记住的值。挂接点：`chat/MessageInput.svelte`（按钮与同步）、`chat/MessageInput/IntegrationsMenu.svelte`（嵌入模式下菜单不含这两项）。
+- 生图可用性（PRD R5.6）：有可用生图 Key，或对话 Key 本身支持生图时「图片生成」可点；否则按钮显示为虚线，悬停提示需要支持生图的 Key，点击打开「模型与密钥」。
 
 ## 9. 隐藏与关闭（`features.ts` + 挂接点）
 
