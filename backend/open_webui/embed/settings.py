@@ -181,6 +181,12 @@ def configure_environment():
         'WEBUI_ADMIN_PASSWORD',
     ):
         os.environ.pop(name, None)
+    # Reuse upstream ordering; do not trim per-Key discovery or rewrite selections.
+    os.environ.setdefault(
+        'MODEL_ORDER_LIST',
+        '["gpt-6-astra","gpt-6.1-sol","gpt-6-sol","gpt-5.6-sol",'
+        '"gpt-5.6-terra","gpt-6-luna","gpt-5.6-luna"]',
+    )
     os.environ.setdefault('IMAGE_GENERATION_MODEL', 'gpt-image-2')
     os.environ.setdefault('IMAGE_EDIT_MODEL', 'gpt-image-2')
     os.environ.setdefault('CHAT_RESPONSE_MAX_TOOL_CALL_ITERATIONS', '20')

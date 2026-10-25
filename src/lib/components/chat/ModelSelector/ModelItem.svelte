@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { hasModelPrices, modelPrices } from '$lib/embed/keys'; // sub2api-embed
-	import { compactPriceText } from '$lib/embed/price'; // sub2api-embed
+	import { modelPrices } from '$lib/embed/keys'; // sub2api-embed
+	import { et } from '$lib/embed/i18n'; // sub2api-embed
 	import { withBase } from '$lib/embed/paths';
 	import { marked } from 'marked';
 
@@ -38,6 +38,14 @@
 	export let onClick: () => void = () => {};
 	export let onEdit: () => void = () => {};
 
+	// Keep all tier/time-period prices from the selected key; only change their presentation.
+	$: priceText = $modelPrices[item.model?.info?.base_model_id ?? item.model?.id] ?? '';
+	$: priceTooltip = priceText
+		.split('；')
+		.map((part) => part.trim())
+		.filter(Boolean)
+		.join('\n');
+
 	$: localizedDescription = resolveLocalizedModelDescription(item.model, $i18n.language);
 
 	const copyLinkHandler = async (model) => {
@@ -61,9 +69,8 @@
 	role="option"
 	aria-selected={isSelected}
 	aria-label={$i18n.t('Select {{modelName}} model', { modelName: item.label })}
-	class="focus-ring group/item flex {$hasModelPrices
-		? 'h-11'
-		: 'h-8'} w-full cursor-pointer select-none items-center rounded-xl px-2 text-left text-[0.8125rem] font-normal text-gray-700 outline-hidden transition-colors duration-75 dark:text-gray-100 {($settings?.highContrastMode ??
+	aria-description={priceTooltip || undefined}
+	class="focus-ring group/item flex h-8 w-full cursor-pointer select-none items-center rounded-xl px-2 text-left text-[0.8125rem] font-normal text-gray-700 outline-hidden transition-colors duration-75 dark:text-gray-100 {($settings?.highContrastMode ??
 	false)
 		? 'hover:bg-gray-200 dark:hover:bg-gray-800'
 		: 'hover:bg-gray-50/40 dark:hover:bg-gray-800/40'} {index === selectedModelIdx &&
@@ -82,8 +89,8 @@
 		onClick();
 	}}
 >
-	<!-- sub2api-embed: row is h-11 while prices are known (name line + price line, see Selector ITEM_HEIGHT) -->
-	<div class="flex flex-1 flex-col {$hasModelPrices ? 'gap-0.5' : 'gap-1.5'} overflow-hidden">
+	<!-- sub2api-embed: single-line rows match Selector ITEM_HEIGHT. -->
+	<div class="flex flex-1 flex-col gap-1.5 overflow-hidden">
 		<!-- {#if (item?.model?.tags ?? []).length > 0}
 			<div
 				class="flex gap-0.5 self-center items-start h-full w-full translate-y-[0.5px] overflow-x-auto scrollbar-none"
@@ -127,6 +134,47 @@
 			</div>
 
 			<div class="flex shrink-0 items-center gap-1.5">
+				{#if priceTooltip}
+					<Tooltip
+						as="span"
+						content={priceTooltip}
+						allowHTML={false}
+						placement="top-start"
+						theme="s2a-model-price"
+						className="group/price flex shrink-0"
+						touch={false}
+						interactive={false}
+						tippyOptions={{
+							trigger: 'mouseenter',
+							delay: [0, 0],
+							duration: [0, 0],
+							maxWidth: 'min(42rem, calc(100vw - 24px))',
+							appendTo: () => document.body
+						}}
+					>
+						<span
+							role="img"
+							aria-label={$et('price.label')}
+							data-testid="s2a-model-price"
+							class="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-100 group-hover/price:bg-blue-100 dark:bg-gray-700 dark:group-hover/price:bg-blue-900/50"
+						>
+							<svg
+								class="h-3 w-3 text-gray-400 group-hover/price:text-blue-500 dark:text-gray-500 dark:group-hover/price:text-blue-400"
+								aria-hidden="true"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								stroke-width="1.5"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+								/>
+							</svg>
+						</span>
+					</Tooltip>
+				{/if}
 				{#if item.model.owned_by === 'ollama'}
 					{#if (item.model.ollama?.details?.parameter_size ?? '') !== ''}
 						<div class="flex items-center translate-y-[0.5px]">
@@ -285,18 +333,6 @@
 				{/if}
 			</div>
 		</div>
-
-		<!-- sub2api-embed: unit price of the selected key's group on its own line under the name;
-		     compact form here, the full plaza wording (tiers, time periods) on hover -->
-		{#if $modelPrices[item.model?.info?.base_model_id ?? item.model?.id]}
-			{@const priceText = $modelPrices[item.model?.info?.base_model_id ?? item.model?.id]}
-			<Tooltip content={priceText} allowHTML={false} placement="top-start" className="min-w-0 pl-6">
-				<span
-					class="block truncate text-[0.6875rem] leading-4 font-normal text-gray-500 dark:text-gray-400"
-					data-testid="s2a-model-price">{compactPriceText(priceText)}</span
-				>
-			</Tooltip>
-		{/if}
 	</div>
 
 	<div class="ml-auto flex shrink-0 items-center gap-1.5 pl-2">
@@ -351,3 +387,12 @@
 		{/if}
 	</div>
 </button>
+
+<style>
+	/* The tooltip is portalled outside the scrollable model list. */
+	:global(.tippy-box[data-theme~='s2a-model-price'] .tippy-content) {
+		white-space: pre-line;
+		text-align: left;
+		overflow-wrap: anywhere;
+	}
+</style>
