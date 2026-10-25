@@ -205,6 +205,11 @@ export const sub2apiKeys: Writable<Sub2apiKey[] | null> = writable(null);
 export const sub2apiKeysError: Writable<string | null> = writable(null);
 /** model id → price text for the selected chat key */
 export const modelPrices: Writable<Record<string, string>> = writable({});
+/** picker rows grow to two lines (name + price) while any price is known; rows stay uniform for the virtual list */
+export const hasModelPrices: Readable<boolean> = derived(
+	modelPrices,
+	($p) => Object.keys($p).length > 0
+);
 
 /** resolved selection for the current user (null until the key list is loaded) */
 export const resolvedKeys: Readable<ResolvedKeys | null> = derived(

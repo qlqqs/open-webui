@@ -1,6 +1,7 @@
 <script lang="ts">
 	// sub2api-embed
 	import { embedModelsError } from '$lib/embed/errors';
+	import { hasModelPrices } from '$lib/embed/keys';
 	import { embedMode } from '$lib/embed/mode';
 	import GatewayErrorHint from '$lib/embed/GatewayErrorHint.svelte';
 	import { localStorage } from '$lib/embed/storage';
@@ -842,7 +843,8 @@
 		deleteModelTarget = null;
 	};
 
-	const ITEM_HEIGHT = 32;
+	// sub2api-embed: ModelItem rows are h-11 (name + price line) while prices are known
+	$: ITEM_HEIGHT = $hasModelPrices ? 44 : 32;
 	const OVERSCAN = 10;
 
 	let listScrollTop = 0;

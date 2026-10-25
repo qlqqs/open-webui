@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { modelPrices } from '$lib/embed/keys'; // sub2api-embed
+	import { hasModelPrices, modelPrices } from '$lib/embed/keys'; // sub2api-embed
+	import { compactPriceText } from '$lib/embed/price'; // sub2api-embed
 	import { withBase } from '$lib/embed/paths';
 	import { marked } from 'marked';
 
@@ -60,7 +61,9 @@
 	role="option"
 	aria-selected={isSelected}
 	aria-label={$i18n.t('Select {{modelName}} model', { modelName: item.label })}
-	class="focus-ring group/item flex h-8 w-full cursor-pointer select-none items-center rounded-xl px-2 text-left text-[0.8125rem] font-normal text-gray-700 outline-hidden transition-colors duration-75 dark:text-gray-100 {($settings?.highContrastMode ??
+	class="focus-ring group/item flex {$hasModelPrices
+		? 'h-11'
+		: 'h-8'} w-full cursor-pointer select-none items-center rounded-xl px-2 text-left text-[0.8125rem] font-normal text-gray-700 outline-hidden transition-colors duration-75 dark:text-gray-100 {($settings?.highContrastMode ??
 	false)
 		? 'hover:bg-gray-200 dark:hover:bg-gray-800'
 		: 'hover:bg-gray-50/40 dark:hover:bg-gray-800/40'} {index === selectedModelIdx &&
@@ -79,7 +82,8 @@
 		onClick();
 	}}
 >
-	<div class="flex flex-1 flex-col gap-1.5 overflow-hidden">
+	<!-- sub2api-embed: row is h-11 while prices are known (name line + price line, see Selector ITEM_HEIGHT) -->
+	<div class="flex flex-1 flex-col {$hasModelPrices ? 'gap-0.5' : 'gap-1.5'} overflow-hidden">
 		<!-- {#if (item?.model?.tags ?? []).length > 0}
 			<div
 				class="flex gap-0.5 self-center items-start h-full w-full translate-y-[0.5px] overflow-x-auto scrollbar-none"
@@ -194,17 +198,6 @@
 
 				<!-- {JSON.stringify(item.info)} -->
 
-				<!-- sub2api-embed: unit price of the selected key's group (same wording as the model plaza) -->
-				{#if $modelPrices[item.model?.info?.base_model_id ?? item.model?.id]}
-					{@const priceText = $modelPrices[item.model?.info?.base_model_id ?? item.model?.id]}
-					<Tooltip content={priceText} className="min-w-0">
-						<span
-							class="line-clamp-1 max-w-[14rem] text-[0.6875rem] font-normal text-gray-500 dark:text-gray-400"
-							data-testid="s2a-model-price">{priceText}</span
-						>
-					</Tooltip>
-				{/if}
-
 				{#if (item?.model?.tags ?? []).length > 0}
 					{#key item.model.id}
 						<Tooltip elementId="tags-{item.model.id}">
@@ -292,6 +285,18 @@
 				{/if}
 			</div>
 		</div>
+
+		<!-- sub2api-embed: unit price of the selected key's group on its own line under the name;
+		     compact form here, the full plaza wording (tiers, time periods) on hover -->
+		{#if $modelPrices[item.model?.info?.base_model_id ?? item.model?.id]}
+			{@const priceText = $modelPrices[item.model?.info?.base_model_id ?? item.model?.id]}
+			<Tooltip content={priceText} allowHTML={false} placement="top-start" className="min-w-0 pl-6">
+				<span
+					class="block truncate text-[0.6875rem] leading-4 font-normal text-gray-500 dark:text-gray-400"
+					data-testid="s2a-model-price">{compactPriceText(priceText)}</span
+				>
+			</Tooltip>
+		{/if}
 	</div>
 
 	<div class="ml-auto flex shrink-0 items-center gap-1.5 pl-2">
