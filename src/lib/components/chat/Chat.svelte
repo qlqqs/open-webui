@@ -3,6 +3,7 @@
 	import { isEmbedMode } from '$lib/embed/mode';
 	import { notifyBalanceChanged } from '$lib/embed/bridge';
 	import { embedErrorToast } from '$lib/embed/app';
+	import { reasoningModelId, reasoningParams } from '$lib/embed/reasoning';
 	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import { stripBase, withBase } from '$lib/embed/paths';
 	import type { TerminalContext } from '$lib/types';
@@ -4320,6 +4321,8 @@
 				params: {
 					...$settings?.params,
 					...Object.fromEntries(Object.entries(params).filter(([, value]) => value !== null)),
+					// sub2api-embed: thinking effort picked in the composer pill
+					...(isEmbedMode() ? reasoningParams(reasoningModelId(model)) : {}),
 					model_controls: $settings?.params?.model_controls ?? {},
 					stop: getStopTokens()
 				},

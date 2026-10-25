@@ -188,6 +188,22 @@ async def run():
     from open_webui.test.embed.smoke.image_model_checks import run as image_model_checks
 
     await image_model_checks()
+
+    # Responses connections: the composer's flat reasoning_effort becomes reasoning.effort.
+    from open_webui.routers.openai import convert_to_responses_payload
+
+    def responses(**extra):
+        return convert_to_responses_payload({'model': 'gpt-5.6-sol', 'messages': [{'role': 'user', 'content': 'hi'}], **extra})
+
+    out = responses(reasoning_effort='xhigh')
+    assert out['reasoning'] == {'effort': 'xhigh'} and 'reasoning_effort' not in out, out
+    assert responses(reasoning_effort='low', reasoning={'effort': 'high', 'summary': 'auto'})['reasoning'] == {
+        'effort': 'high',
+        'summary': 'auto',
+    }
+    assert responses(reasoning_effort='low', reasoning={'summary': 'auto'})['reasoning'] == {'effort': 'low', 'summary': 'auto'}
+    out = responses()
+    assert 'reasoning' not in out and 'reasoning_effort' not in out, out
     print('HOOK_CHECKS_PASS')
 
 

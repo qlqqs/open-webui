@@ -68,7 +68,19 @@ const zhCN = {
 	'brand.name': '对话',
 	'upload.heic': '暂不支持 HEIC 图片，请先转换为 JPG 或 PNG 再上传。',
 	'admin.tools': '工具',
-	'admin.toolServers': '工具服务器'
+	'admin.toolServers': '工具服务器',
+	'reasoning.title': '思考强度',
+	'reasoning.slider': '拖动调节思考强度',
+	'reasoning.showLevels': '查看全部档位',
+	'reasoning.showSlider': '返回滑块',
+	'reasoning.default': '默认',
+	'reasoning.multiplier': '计费 ×{{n}}',
+	'reasoning.level.minimal': '最少',
+	'reasoning.level.low': '低',
+	'reasoning.level.medium': '中',
+	'reasoning.level.high': '高',
+	'reasoning.level.xhigh': '超高',
+	'reasoning.level.max': '最高'
 } as const;
 
 export type EmbedStringKey = keyof typeof zhCN;
@@ -144,7 +156,19 @@ const enUS: Record<EmbedStringKey, string> = {
 	'brand.name': 'Chat',
 	'upload.heic': 'HEIC images are not supported here. Please convert to JPG or PNG first.',
 	'admin.tools': 'Tools',
-	'admin.toolServers': 'Tool servers'
+	'admin.toolServers': 'Tool servers',
+	'reasoning.title': 'Thinking',
+	'reasoning.slider': 'Drag to adjust thinking effort',
+	'reasoning.showLevels': 'Show all levels',
+	'reasoning.showSlider': 'Back to slider',
+	'reasoning.default': 'Default',
+	'reasoning.multiplier': 'Billed ×{{n}}',
+	'reasoning.level.minimal': 'Minimal',
+	'reasoning.level.low': 'Low',
+	'reasoning.level.medium': 'Medium',
+	'reasoning.level.high': 'High',
+	'reasoning.level.xhigh': 'Extra High',
+	'reasoning.level.max': 'Max'
 };
 
 const DICTS: Record<string, Record<EmbedStringKey, string>> = { 'zh-CN': zhCN, 'en-US': enUS };

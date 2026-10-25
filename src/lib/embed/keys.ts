@@ -39,6 +39,15 @@ export type Sub2apiKey = {
 	masked?: string;
 };
 
+export type ModelReasoning = {
+	/** reasoning_effort values, lowest first */
+	levels: string[];
+	/** what the gateway uses when the request omits reasoning_effort */
+	default?: string;
+	/** billing multiplier per level; levels at ×1 are omitted */
+	multipliers?: Record<string, number>;
+};
+
 export type KeySelection = { key_id?: number | null; image_key_id?: number | null };
 
 export type KeyOption = {
@@ -250,6 +259,16 @@ export const fetchModelPrices = (keyId: number) =>
 	call<{ models: { id: string; price_text: string }[] }>(
 		`/model-prices?key_id=${encodeURIComponent(String(keyId))}`
 	).then((r) => Object.fromEntries((r.models ?? []).map((m) => [m.id, m.price_text])));
+/** effort levels for the given models under the key's group; models without a choice are absent */
+export const fetchModelReasoning = (keyId: number, models: string[]) => {
+	const q = new URLSearchParams({ key_id: String(keyId) });
+	for (const m of models) q.append('model', m);
+	return call<{ models: Record<string, ModelReasoning> }>(`/model-reasoning?${q}`).then((r) =>
+		Object.fromEntries(
+			Object.entries(r.models ?? {}).filter(([, v]) => (v?.levels?.length ?? 0) > 1)
+		)
+	);
+};
 
 export async function refreshKeys(): Promise<Sub2apiKey[] | null> {
 	try {

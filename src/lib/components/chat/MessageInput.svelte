@@ -7,6 +7,8 @@
 	import { et } from '$lib/embed/i18n';
 	import { embedModelsError } from '$lib/embed/errors';
 	import GatewayErrorHint from '$lib/embed/GatewayErrorHint.svelte';
+	import ReasoningPicker from '$lib/embed/ReasoningPicker.svelte';
+	import { reasoningModelId, syncModelReasoning } from '$lib/embed/reasoning';
 	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import { stripBase, withBase } from '$lib/embed/paths';
 	import type { TerminalContext } from '$lib/types';
@@ -178,6 +180,10 @@
 
 	let selectedModelIds = [];
 	$: selectedModelIds = atSelectedModel !== undefined ? [atSelectedModel.id] : selectedModels;
+	// sub2api-embed: thinking-effort pill follows the first selected model
+	$: reasoningModel = $embedMode ? $models.find((m) => m.id === selectedModelIds[0]) : undefined;
+	$: if ($embedMode)
+		syncModelReasoning($resolvedKeys?.chatKey?.id ?? null, $models.map(reasoningModelId));
 	$: hasChatVariables = selectedModelIds.some(
 		(modelId) =>
 			($models.find((model) => model.id === modelId)?.info?.meta?.chat_variables_schema?.fields
@@ -2744,6 +2750,10 @@
 										/>
 									</div>
 									<ModelControls selectedModels={selectedModelIds} />
+									{#if reasoningModel}
+										<!-- sub2api-embed: ChatGPT-style thinking effort (levels from sub2api) -->
+										<ReasoningPicker modelId={reasoningModelId(reasoningModel)} />
+									{/if}
 
 									{#if isActive && prompt === '' && files.length === 0}
 										<div class=" flex items-center">

@@ -84,6 +84,7 @@ sub2api 先读取候选 ID、校验归属及可用性，然后删除客户端全
 - `POST keys`：`{"name":"对话","group_id":3}`，只允许本人可用分组；返回 `{"key":<上述单项>}`，不返回明文。
 - `GET groups`：`{"groups":[{"id":3,"name":"Claude","platform":"anthropic","description":"","supports_images":false}]}`，与控制台创建 Key 的可选分组一致。
 - `GET model-prices?key_id=12`：`{"models":[{"id":"claude-sonnet-4-5","price_text":"输入 ¥3.00 / 百万 tokens · 输出 ¥15.00 / 百万 tokens"}]}`。按所选 Key 分组及当前用户的模型广场口径生成（币种/汇率一致，不展示倍率）；无价格项省略；他人的 Key 返回 404。
+- `GET model-reasoning?key_id=12&model=a&model=b`（最多 300 个 `model`）：`{"models":{"claude-opus-5-5":{"levels":["low","medium","high","xhigh","max"],"default":"medium","multipliers":{"max":1.5}}}}`。档位与网关 Codex 模型清单同源，按该 Key 分组的「最高思考档」裁掉超限档位；不足两档的模型省略；`multipliers` 只列渠道定价里 ≠1 的档位倍率。他人的 Key 返回 404。
 
 Key ID 保存在 WebUI 原版用户设置 `ui.sub2api={"key_id":12,"image_key_id":34}`，通过 `/api/v1/users/user/settings` 更新，按用户隔离。
 模型列表仍由 fork 后端拿该 Key 调固定网关 `/v1/models`；价格接口不替代模型授权。
@@ -92,7 +93,7 @@ Key ID 保存在 WebUI 原版用户设置 `ui.sub2api={"key_id":12,"image_key_id
 
 - `S2A_GATEWAY_URL` 必须是无路径、尾斜杠、凭据、query、fragment 的 HTTP(S) origin；后端自行追加 `/v1`。
 - 每请求通过 ContextVar 读取对话/生图 Key，不持久化明文、不回退到环境或数据库中的 Key。空对话 Key 的模型请求返回 400 `{"detail":"请选择可用的 Key"}`。
-- OpenAI 平台走 Responses；其他平台走 Chat Completions；后台标题、工具循环等继承当次上下文，携带真实 IP，不自动跟随重定向、不转发 Cookie。
+- OpenAI 平台走 Responses（`convert_to_responses_payload` 把顶层 `reasoning_effort` 转成 `reasoning.effort`，已有 `reasoning.effort` 时以它为准）；其他平台走 Chat Completions；后台标题、工具循环等继承当次上下文，携带真实 IP，不自动跟随重定向、不转发 Cookie。
 - 对话列表按 `S2A_HIDDEN_CHAT_MODELS` 隐藏内部模型和纯生图模型；完整模型缓存不变，隐藏不禁止直接按 ID 调用。
 - 生图/编辑共用 per-Key SHA-256、60 秒模型缓存：先使用该 Key 可用的配置模型，否则依次选 `gpt-image-2`、其他 `gpt-image*`、其他生图模型（同级按名字忽略大小写排序）。无生图模型返回 400「当前生图 Key 所在分组没有可用的生图模型」；模型列表失败保留 `s2a_gateway_error`，两者均不发出计费的生图/编辑请求。内置生图工具走同一路径。
 - 生图优先生图 Key，否则回退对话 Key；`n` 默认上限 4。生成/编辑结果同时含 `b64_json` 和 `url` 时优先取 base64（网关回填会保留原 URL），不下载外部链接；只有 URL 时仍只允许同网关 origin，否则拒绝，且可能发生在上游已计费之后。

@@ -53,6 +53,7 @@
 | `artifact.ts` / `ArtifactFrame.svelte` | Artifact 沙箱页的父侧（§7） |
 | `app.ts` | 上游布局调用的入口：`initEmbedApp`、`embedAfterUserSettings`、`embedBrandName`、`embedErrorToast` |
 | `i18n.ts` | 嵌入专用文案（zh-CN / en-US），不改上游语言包 |
+| `reasoning.ts` / `ReasoningPicker.svelte` | 输入框「思考强度」胶囊（§8） |
 | `KeysSettings.svelte` / `SidebarSettings.svelte` / `LicenseFooter.svelte` / `GatewayErrorHint.svelte` | 组件 |
 
 ## 4. 存储
@@ -108,13 +109,14 @@ sub2api 对这个精确路径下发独立 CSP（允许内联脚本、`connect-sr
 ## 8. 「模型与密钥」
 
 - 设置页新分区 `sub2api`（替换 Connections；嵌入模式下设置页只保留：通用、界面、键盘、模型与密钥、数据、已归档对话；管理员另有「扩展功能」即工具服务器）。
-- 数据：`GET /_chat/__sub2api/keys|groups`、`POST /_chat/__sub2api/keys`、`GET /_chat/__sub2api/model-prices?key_id=`（contract C）。不出现明文 Key。
+- 数据：`GET /_chat/__sub2api/keys|groups`、`POST /_chat/__sub2api/keys`、`GET /_chat/__sub2api/model-prices?key_id=`、`GET /_chat/__sub2api/model-reasoning?key_id=&model=…`（contract C）。不出现明文 Key。
 - 对话 Key 下拉列出全部 Key，不可用的置灰并写明原因（已禁用 / 已过期 / 额度已用完 / 分组不可用 / 分组不支持对话）；生图 Key 下拉只列 `supports_images` 的 Key，可选「不单独设置」。
 - 选择保存到用户设置 `ui.sub2api = {key_id, image_key_id}`（字段级补丁），随后重新拉取模型列表与单价。
 - 没有可用 Key 时显示「一键创建」（分组下拉；默认选中不生图的 anthropic 分组，其次 openai，再其次第一个），创建后自动设为对话 Key。
 - 进入时没有可用的对话 Key：每个标签页会话自动打开一次该分区，并给出带「去选择」按钮的提示。
 - 模型选择器每行显示 `price_text`（预设助手按其 `base_model_id` 取价）。
 - 模型列表加载失败（contract D：`/api/models` 返回网关状态码与 `{"detail","s2a_gateway_error":{status,code,message}}`，如余额不足、Key 无效）：嵌入模式下 `getModels` 不再抛出，而是返回空列表并写入 `embedModelsError`（`errors.ts`）；输入框上方与模型下拉的空状态显示与对话错误相同的提示（余额不足 → 去充值，Key 不可用 → 去设置）。下一次成功加载时提示消失。挂接点：`lib/apis/index.ts` `getModels`、`chat/MessageInput.svelte`、`chat/ModelSelector/Selector.svelte`。
+- 思考强度（仿 ChatGPT）：输入框模型名右侧的胶囊，未选时显示「思考强度」，选后显示档位名；点开是档位名加横向滑条（左低右高，拖动 / 点击吸附到档位，方向键、Home / End 可调），点档位名旁的「›」切到档位列表（标注「默认」与计费倍率）。档位来自 `GET /_chat/__sub2api/model-reasoning`（按对话 Key 与当前模型列表批量取，同一 Key + 列表不重复请求），没有可选档位的模型不显示胶囊。选择按模型存在 `owui:s2a:reasoning`，发送时作为 `params.reasoning_effort`（预设助手按 `base_model_id`）；已不在可选档位里的旧选择不发送，由网关用默认档。挂接点：`chat/MessageInput.svelte`（胶囊与拉取）、`chat/Chat.svelte`（请求参数）。
 - 生图开关（PRD R5.6）：有可用生图 Key，或对话 Key 本身支持生图时才显示；否则输入框扩展菜单里显示「去设置生图 Key」。
 
 ## 9. 隐藏与关闭（`features.ts` + 挂接点）

@@ -1353,6 +1353,15 @@ def convert_to_responses_payload(payload: dict) -> dict:
     if 'max_completion_tokens' in responses_payload:
         responses_payload['max_output_tokens'] = responses_payload.pop('max_completion_tokens')
 
+    # sub2api-embed: the Responses API takes reasoning.effort; a flat reasoning_effort (set by
+    # the composer's thinking-effort picker) would otherwise reach the upstream unchanged.
+    reasoning_effort = responses_payload.pop('reasoning_effort', None)
+    if isinstance(reasoning_effort, str) and reasoning_effort:
+        reasoning = responses_payload.get('reasoning')
+        reasoning = dict(reasoning) if isinstance(reasoning, dict) else {}
+        reasoning.setdefault('effort', reasoning_effort)
+        responses_payload['reasoning'] = reasoning
+
     # Remove Chat Completions-only parameters not supported by the Responses API
     for unsupported_key in (
         'stream_options',
