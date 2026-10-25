@@ -2,8 +2,14 @@
 
 import ipaddress
 import os
+import re
 from dataclasses import dataclass
 from urllib.parse import urlsplit
+
+
+# Image-only families, not general multimodal/chat models. Shared with image fallback selection.
+IMAGE_MODEL_PATTERN = r'gpt-image|dall-?e|imagen|^grok-.*image|seedream|flux'
+DEFAULT_HIDDEN_CHAT_MODELS = r'^codex-auto-review|^gpt-reserve|' + IMAGE_MODEL_PATTERN
 
 
 def boolean(value):
@@ -50,6 +56,7 @@ class Settings:
     )
     slim_doc_loaders: bool = True
     image_max_n: int = 4
+    hidden_chat_models: str = DEFAULT_HIDDEN_CHAT_MODELS
 
     @classmethod
     def from_env(cls, env=None):
@@ -65,6 +72,11 @@ class Settings:
         maximum = int(env.get('S2A_IMAGE_MAX_N', '4'))
         if maximum < 1:
             raise ValueError('S2A_IMAGE_MAX_N must be positive')
+        hidden = env.get('S2A_HIDDEN_CHAT_MODELS', DEFAULT_HIDDEN_CHAT_MODELS)
+        try:
+            re.compile(hidden, re.IGNORECASE)
+        except re.error:
+            raise ValueError('S2A_HIDDEN_CHAT_MODELS must be a valid regular expression') from None
         return cls(
             True,
             gateway,
@@ -80,6 +92,7 @@ class Settings:
             ),
             boolean(env.get('S2A_SLIM_DOC_LOADERS', 'true')),
             maximum,
+            hidden,
         )
 
 
@@ -168,8 +181,8 @@ def configure_environment():
         'WEBUI_ADMIN_PASSWORD',
     ):
         os.environ.pop(name, None)
-    os.environ.setdefault('IMAGE_GENERATION_MODEL', 'gpt-image-1')
-    os.environ.setdefault('IMAGE_EDIT_MODEL', 'gpt-image-1')
+    os.environ.setdefault('IMAGE_GENERATION_MODEL', 'gpt-image-2')
+    os.environ.setdefault('IMAGE_EDIT_MODEL', 'gpt-image-2')
     os.environ.setdefault('CHAT_RESPONSE_MAX_TOOL_CALL_ITERATIONS', '20')
     os.environ.setdefault('RAG_FILE_MAX_SIZE', '25')
     os.environ.setdefault(

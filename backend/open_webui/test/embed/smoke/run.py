@@ -84,8 +84,10 @@ class Harness:
         self.sockets = []
         self.process = None
         self.log = None
-        self.response_image_url = None
+        self.response_image_item = None
+        self.response_image_error = None
         self.model_errors = {}
+        self.model_lists = {}
 
     async def gateway(self, request):
         body = None
@@ -94,6 +96,11 @@ class Harness:
                 body = await request.json()
             else:
                 body = {'multipart': True}
+                async for field in await request.multipart():
+                    if field.filename:
+                        await field.read()
+                    else:
+                        body[field.name] = await field.text()
         key = request.headers.get('Authorization', '')
         self.records.append(
             {
@@ -111,13 +118,15 @@ class Harness:
                     return web.Response(status=status, text=body)
                 return web.json_response(body, status=status)
             suffix = key.rsplit('-', 1)[-1]
-            return web.json_response({'data': [{'id': 'common'}, {'id': 'only-' + suffix}]})
+            ids = self.model_lists.get(key, ['common', 'only-' + suffix, 'gpt-image-2', 'codex-auto-review', 'gpt-reserve'])
+            return web.json_response({'data': [{'id': name} for name in ids]})
         if request.path in ('/v1/images/generations', '/v1/images/edits'):
-            item = (
-                {'url': self.response_image_url}
-                if self.response_image_url
-                else {'b64_json': base64.b64encode(PNG).decode()}
-            )
+            if self.response_image_error:
+                status, body = self.response_image_error
+                return web.json_response(body, status=status)
+            item = self.response_image_item
+            if item is None:
+                item = {'b64_json': base64.b64encode(PNG).decode()}
             return web.json_response({'data': [item]})
         if request.path == '/image.png':
             return web.Response(body=PNG, content_type='image/png')
@@ -319,6 +328,8 @@ class Harness:
                 'RAG_RERANKING_MODEL': '',
                 'HF_HUB_OFFLINE': '1',
                 'S2A_HIDE_BRANDING': '1',
+                'IMAGE_GENERATION_MODEL': 'gpt-image-1',
+                'IMAGE_EDIT_MODEL': 'gpt-image-1',
             }
         )
         env.update(overrides or {})
@@ -485,6 +496,12 @@ async def run():
             await client.get('/api/models', headers=auth(1))
             assert len([r for r in harness.records if r['path'] == '/v1/models']) == before
 
+            response = await client.post(
+                '/api/chat/completions', headers=auth(1),
+                json={'model': 'codex-auto-review', 'messages': [{'role': 'user', 'content': 'explicit hidden ID'}]},
+            )
+            assert response.status_code == 200, response.text
+
             # Supplement 3: real route must preserve gateway status and flat diagnostics.
             model_error_cases = [
                 (
@@ -649,13 +666,19 @@ async def run():
                 return chat_id
 
             chat_ids = await asyncio.gather(*(background_chat(uid) for uid in (1, 2)))
+            harness.response_image_item = {
+                'url': 'https://cdn.example.com/a.png',
+                'b64_json': base64.b64encode(PNG).decode(),
+            }
             await background_chat(1, image=True)
+            harness.response_image_item = None
             native_images = [
                 r
                 for r in harness.records
                 if r['path'] == '/v1/images/generations' and (r['body'] or {}).get('prompt') == 'NATIVE-IMAGE-C1'
             ]
             assert len(native_images) == 1 and native_images[0]['key'] == 'Bearer smoke-image-1', native_images
+            assert native_images[0]['body']['model'] == 'gpt-image-2', native_images
             from open_webui.test.embed.smoke.isolation import check_isolation
 
             isolation_checks = await check_isolation(client, auth, tokens, harness, socket_connect, chat_ids[0])
@@ -829,24 +852,94 @@ async def run():
                         continue
                     response = await client.request(method, path, headers=auth(uid), json={})
                     assert response.status_code == expected, (path, uid, expected, response.status_code, response.text)
-            # Returned gateway image URLs and redirect/external URLs.
-            for url, expected in (
-                ('http://127.0.0.1:28201/image.png', 200),
-                ('http://127.0.0.1:28203/external.png', 400),
-                ('http://127.0.0.1:28201/redirect.png', 400),
+            # Exercise the real generation/edit routes, decoding and persisted image bytes.
+            encoded_png = base64.b64encode(PNG).decode()
+            external_url = 'https://cdn.example.com/a.png'
+            gateway_url = 'http://127.0.0.1:28201/image.png'
+            for endpoint, gateway_path, extra in (
+                ('generations', '/v1/images/generations', {}),
+                ('edit', '/v1/images/edits', {'image': 'data:image/png;base64,' + encoded_png}),
             ):
-                harness.response_image_url = url
+                for item, expected, fetch in (
+                    ({'url': external_url, 'b64_json': encoded_png}, 200, False),
+                    ({'url': gateway_url, 'b64_json': encoded_png}, 200, False),
+                    ({'b64_json': encoded_png}, 200, False),
+                    ({'url': external_url}, 400, False),
+                    ({'url': external_url, 'b64_json': ''}, 400, False),
+                    ({'url': 'http://127.0.0.1:28203/external.png'}, 400, False),
+                    ({'url': gateway_url}, 200, True),
+                    ({'url': gateway_url, 'b64_json': None}, 200, True),
+                    ({'url': 'http://127.0.0.1:28201/redirect.png'}, 400, True),
+                ):
+                    harness.response_image_item = item
+                    before = len(harness.records)
+                    response = await client.post(
+                        '/api/v1/images/' + endpoint,
+                        headers=auth(2, image=True),
+                        json={'prompt': 'image response regression', 'n': 1, **extra},
+                    )
+                    assert response.status_code == expected, (endpoint, item, response.text)
+                    records = harness.records[before:]
+                    assert records[0]['body']['model'] == 'gpt-image-2', records
+                    # Exactly one billable request; no download when b64 is present or URL is rejected.
+                    assert [r['path'] for r in records] == [gateway_path] + (
+                        ['/' + item['url'].rsplit('/', 1)[-1]] if fetch else []
+                    ), records
+                    if expected == 200:
+                        image = response.json()[0]
+                        content = await client.get(image['url'], headers=auth(2))
+                        assert content.status_code == 200 and content.content == PNG, content.text
+                for status, body, message in (
+                    (404, {'error': {'message': 'Image model does not exist'}}, 'Image model does not exist'),
+                    (503, {'error': {'message': 'Image upstream unavailable'}}, 'Image upstream unavailable'),
+                    (502, {'error': 'unexpected shape'}, 'Bad Gateway'),
+                ):
+                    harness.response_image_error = (status, body)
+                    before = len(harness.records)
+                    response = await client.post(
+                        '/api/v1/images/' + endpoint,
+                        headers=auth(2, image=True),
+                        json={'prompt': 'image error regression', 'n': 1, **extra},
+                    )
+                    assert response.status_code == 400 and message in response.json()['detail'], response.text
+                    assert [r['path'] for r in harness.records[before:]] == [gateway_path]
+                harness.response_image_error = None
+            harness.response_image_item = None
+            # A fresh image Key: list errors keep their flat payload and never issue paid image requests.
+            image_key = 'Bearer smoke-image-3'
+            harness.model_errors[image_key] = (403, {'code': 'INSUFFICIENT_BALANCE', 'message': 'No balance'})
+            for endpoint, extra in (
+                ('generations', {}),
+                ('edit', {'image': 'https://cdn.example.com/input.png'}),
+            ):
+                before = len(harness.records)
                 response = await client.post(
-                    '/api/v1/images/generations', headers=auth(1), json={'prompt': 'url test'}
+                    '/api/v1/images/' + endpoint,
+                    headers=auth(3, image=True),
+                    json={'prompt': 'model list failure', **extra},
                 )
-                assert response.status_code == expected, response.text
-            harness.response_image_url = None
-            response = await client.post(
-                '/api/v1/images/edit',
-                headers=auth(2, image=True),
-                json={'prompt': 'edit', 'image': 'data:image/png;base64,' + base64.b64encode(PNG).decode(), 'n': 1},
-            )
-            assert response.status_code == 200, response.text
+                assert response.status_code == 403 and response.json() == {
+                    'detail': '账户余额不足',
+                    's2a_gateway_error': {'status': 403, 'code': 'INSUFFICIENT_BALANCE', 'message': 'No balance'},
+                }, response.text
+                assert [r['path'] for r in harness.records[before:]] == ['/v1/models']
+                assert harness.records[-1]['key'] == image_key
+            del harness.model_errors[image_key]
+            harness.model_lists[image_key] = ['gpt-6-sol']
+            for index, (endpoint, extra) in enumerate((
+                ('generations', {}),
+                ('edit', {'image': 'https://cdn.example.com/input.png'}),
+            )):
+                before = len(harness.records)
+                response = await client.post(
+                    '/api/v1/images/' + endpoint,
+                    headers=auth(3, image=True),
+                    json={'prompt': 'no image models', **extra},
+                )
+                assert response.status_code == 400 and response.json() == {
+                    'detail': '当前生图 Key 所在分组没有可用的生图模型',
+                }, response.text
+                assert [r['path'] for r in harness.records[before:]] == (['/v1/models'] if index == 0 else [])
         for record in harness.records:
             assert record['cookie'] is None
             assert record['key'] in (
@@ -854,6 +947,7 @@ async def run():
                 'Bearer smoke-chat-2',
                 'Bearer smoke-image-2',
                 'Bearer smoke-image-1',
+                'Bearer smoke-image-3',
                 'Bearer smoke-chat-3',
             ), record
             body = record['body'] or {}

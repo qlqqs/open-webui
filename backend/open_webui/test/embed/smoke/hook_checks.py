@@ -4,7 +4,7 @@ import asyncio
 from dataclasses import replace
 import sys
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from open_webui.test.embed.smoke.server import audit
 
@@ -143,6 +143,51 @@ async def run():
     from open_webui.test.embed.smoke.isolation_checks import run as isolation_checks
 
     await isolation_checks()
+    # Non-embedded OpenAI responses must retain upstream's URL-first behavior.
+    from open_webui.routers import images as image_routes
+    from open_webui.embed import images as embed_images
+    from open_webui.test.embed.smoke.run import PNG
+    import base64
+
+    config = embed_images.configure(
+        SimpleNamespace(
+            IMAGE_GENERATION_MODEL='dall-e-3', IMAGE_EDIT_MODEL='dall-e-2', IMAGE_SIZE='', IMAGE_EDIT_SIZE='',
+        )
+    )
+    response = MagicMock()
+    response.json = AsyncMock(
+        return_value={
+            'data': [{'url': 'https://cdn.example.com/a.png', 'b64_json': base64.b64encode(PNG).decode()}],
+        }
+    )
+    session = MagicMock()
+    session.post.return_value.__aenter__.return_value = response
+    with (
+        patch.object(image_routes, 'embed_settings', replace(image_routes.embed_settings, enabled=False)),
+        patch.object(image_routes, 'get_image_config', AsyncMock(return_value=config)),
+        patch.object(image_routes, 'get_image_model', AsyncMock(return_value='dall-e-3')),
+        patch.object(image_routes, 'get_session', AsyncMock(return_value=session)),
+        patch.object(image_routes, 'get_image_data', AsyncMock(return_value=(PNG, 'image/png'))) as load,
+        patch.object(image_routes, 'upload_image', AsyncMock(return_value=(None, {'id': 'test'}))),
+        patch.object(embed_images, 'raise_for_status', AsyncMock()) as embed_status,
+    ):
+        for call, form in (
+            (image_routes.image_generations, image_routes.CreateImageForm(prompt='upstream generation')),
+            (
+                image_routes.image_edits,
+                image_routes.EditImageForm(
+                    prompt='upstream edit', image='data:image/png;base64,' + base64.b64encode(PNG).decode(),
+                ),
+            ),
+        ):
+            assert await call(request, form, user=SimpleNamespace(id='one', role='user')) == [{'id': 'test'}]
+            load.assert_awaited_once_with('https://cdn.example.com/a.png', None)
+            load.reset_mock()
+        assert response.raise_for_status.call_count == 2
+        embed_status.assert_not_awaited()
+    from open_webui.test.embed.smoke.image_model_checks import run as image_model_checks
+
+    await image_model_checks()
     print('HOOK_CHECKS_PASS')
 
 

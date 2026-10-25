@@ -93,7 +93,9 @@ Key ID 保存在 WebUI 原版用户设置 `ui.sub2api={"key_id":12,"image_key_id
 - `S2A_GATEWAY_URL` 必须是无路径、尾斜杠、凭据、query、fragment 的 HTTP(S) origin；后端自行追加 `/v1`。
 - 每请求通过 ContextVar 读取对话/生图 Key，不持久化明文、不回退到环境或数据库中的 Key。空对话 Key 的模型请求返回 400 `{"detail":"请选择可用的 Key"}`。
 - OpenAI 平台走 Responses；其他平台走 Chat Completions；后台标题、工具循环等继承当次上下文，携带真实 IP，不自动跟随重定向、不转发 Cookie。
-- 生图优先生图 Key，否则回退对话 Key；`n` 默认上限 4，结果只接受 b64 或同网关 origin URL。外部图片链接拒绝下载，可能发生在上游已计费之后。
+- 对话列表按 `S2A_HIDDEN_CHAT_MODELS` 隐藏内部模型和纯生图模型；完整模型缓存不变，隐藏不禁止直接按 ID 调用。
+- 生图/编辑共用 per-Key SHA-256、60 秒模型缓存：先使用该 Key 可用的配置模型，否则依次选 `gpt-image-2`、其他 `gpt-image*`、其他生图模型（同级按名字忽略大小写排序）。无生图模型返回 400「当前生图 Key 所在分组没有可用的生图模型」；模型列表失败保留 `s2a_gateway_error`，两者均不发出计费的生图/编辑请求。内置生图工具走同一路径。
+- 生图优先生图 Key，否则回退对话 Key；`n` 默认上限 4。生成/编辑结果同时含 `b64_json` 和 `url` 时优先取 base64（网关回填会保留原 URL），不下载外部链接；只有 URL 时仍只允许同网关 origin，否则拒绝，且可能发生在上游已计费之后。
 - 联网搜索由网关原生 `web_search` 完成，不启用 WebUI 自建搜索和网页抓取。
 - 开启全文附件，绕过 embedding/向量库；slim 加 pypdf、docx2txt，PDF 不 OCR。工具类别默认含 `image_generation`，保留原生工具模式生图。
 - 工具服务器 `/api/v1/configs/tool_servers` 及 verify 仅 admin 可写，且配置持久化；其他 configs 写入口禁止。只允许可信管理员管理预设助手/提示词、Functions/Tools/MCP。
@@ -173,6 +175,7 @@ Artifacts、HTML 文件/工具 UI/引用预览均应走它，不用继承主文�
 | `S2A_NATIVE_WEB_SEARCH` | `true` | contract G |
 | `S2A_BUILTIN_TOOL_CATEGORIES` | `time,user_input,files,chats,notes,tasks,calendar,image_generation` | 更新后的 contract G |
 | `S2A_SLIM_DOC_LOADERS` / `S2A_IMAGE_MAX_N` | `true` / `4` | contract G |
+| `S2A_HIDDEN_CHAT_MODELS` | `^codex-auto-review\|^gpt-reserve\|gpt-image\|dall-?e\|imagen\|^grok-.*image\|seedream\|flux` | 不区分大小写的正则，以 `\|` 表示或；覆盖整个默认规则，空串关闭过滤；仅隐藏对话列表 |
 | `WEBUI_SECRET_KEY` | 镜像不设，部署注入稳定随机秘密 | 阶段 1 |
 | `WEBUI_URL` / `CORS_ALLOW_ORIGIN` | 部署设实际 `https://域名/_chat` / `https://域名` | 阶段 1；不要沿用上游宽泛 CORS |
 | `DEFAULT_LOCALE` / `UVICORN_WORKERS` | `zh-CN` / `1` | 阶段 1、design §8 |
@@ -219,7 +222,7 @@ WORKSPACE_PROMPTS WORKSPACE_PROMPTS_IMPORT WORKSPACE_KNOWLEDGE WORKSPACE_SKILLS
 `OPENAI_API_BASE_URL(S)` 重新派生为网关 `/v1`；`OLLAMA_BASE_URL` 也设置为网关 origin 以避免原版启动端口探测。`OPENAI_API_KEY(S)` 在代码中强制清空，镜像不写任何 Key。
 清除 `LICENSE_KEY`、`CUSTOM_NAME`、可信组头及环境预创建管理员账号。
 
-可覆盖的默认：`IMAGE_GENERATION_MODEL=IMAGE_EDIT_MODEL=gpt-image-1`、`CHAT_RESPONSE_MAX_TOOL_CALL_ITERATIONS=20`、`RAG_FILE_MAX_SIZE=25`，以及：
+可覆盖的默认：`IMAGE_GENERATION_MODEL=IMAGE_EDIT_MODEL=gpt-image-2`、`CHAT_RESPONSE_MAX_TOOL_CALL_ITERATIONS=20`、`RAG_FILE_MAX_SIZE=25`，以及：
 
 ```text
 RAG_ALLOWED_FILE_EXTENSIONS=pdf,docx,txt,md,csv,html,htm,json,xml,yaml,yml,py,js,ts,tsx,jsx,css,go,rs,c,cpp,h,java,sh,sql,log

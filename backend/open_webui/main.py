@@ -937,6 +937,10 @@ if ENABLE_SCIM:
 @app.get('/api/v1/models')  # Experimental: Compatibility with OpenAI API
 async def get_models(request: Request, refresh: bool = False, user=Depends(get_verified_user)):
     all_models = await get_all_models(request, refresh=refresh, user=user)
+    # sub2api-embed: hide internal/image models only from chat lists, not dispatch or the Key cache.
+    if embed_settings.enabled:
+        from open_webui.embed.models import visible_chat_models
+        all_models = visible_chat_models(all_models)
 
     # Filter out filter pipelines
     models = [

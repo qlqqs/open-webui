@@ -18,10 +18,10 @@ def current_key(image=False):
     return key
 
 
-def connection():
+def connection(image=False):
     return (
         settings.gateway_url + '/v1',
-        current_key(),
+        current_key(image=image),
         {
             'api_type': 'responses' if SUB2API_KEY_PLATFORM.get() == 'openai' else 'chat_completions',
         },

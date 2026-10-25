@@ -638,6 +638,10 @@ async def image_generations(
     metadata = metadata or {}
 
     model = await get_image_model(request)
+    # sub2api-embed: resolve before error wrapping/paid requests; preserve gateway model errors.
+    if embed_settings.enabled:
+        model = await embed_images.resolve_model(request, image_config.IMAGE_GENERATION_MODEL)
+        image_config.IMAGE_GENERATION_MODEL = model  # response_format must follow the resolved model.
 
     try:
         if image_config.IMAGE_GENERATION_ENGINE == 'openai':
@@ -686,13 +690,20 @@ async def image_generations(
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
                 **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
-                r.raise_for_status()
+                # sub2api-embed: retain gateway error.message instead of only the HTTP reason.
+                if embed_settings.enabled:
+                    await embed_images.raise_for_status(r)
+                else:
+                    r.raise_for_status()
                 res = await r.json(content_type=None)
 
             images = []
 
             for image in res['data']:
-                if image_url := image.get('url', None):
+                # sub2api-embed: gateway backfill keeps the original URL; prefer inline data.
+                if embed_settings.enabled and image.get('b64_json'):
+                    image_data, content_type = await get_image_data(image['b64_json'])
+                elif image_url := image.get('url', None):
                     image_data, content_type = await get_image_data(
                         image_url,
                         {k: v for k, v in headers.items() if k != 'Content-Type'}
@@ -944,6 +955,10 @@ async def image_edits(
         width, height = tuple(map(int, size.split('x')))
 
     model = image_config.IMAGE_EDIT_MODEL if form_data.model is None else form_data.model
+    # sub2api-embed: resolve before loading inputs/paid requests; preserve gateway model errors.
+    if embed_settings.enabled:
+        model = await embed_images.resolve_model(request, image_config.IMAGE_EDIT_MODEL)
+        image_config.IMAGE_EDIT_MODEL = model  # response_format must follow the resolved model.
 
     try:
 
@@ -1079,12 +1094,19 @@ async def image_edits(
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
                 **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
-                r.raise_for_status()
+                # sub2api-embed: retain gateway error.message instead of only the HTTP reason.
+                if embed_settings.enabled:
+                    await embed_images.raise_for_status(r)
+                else:
+                    r.raise_for_status()
                 res = await r.json(content_type=None)
 
             images = []
             for image in res['data']:
-                if image_url := image.get('url', None):
+                # sub2api-embed: gateway backfill keeps the original URL; prefer inline data.
+                if embed_settings.enabled and image.get('b64_json'):
+                    image_data, content_type = await get_image_data(image['b64_json'])
+                elif image_url := image.get('url', None):
                     image_data, content_type = await get_image_data(
                         image_url,
                         {k: v for k, v in headers.items() if k != 'Content-Type'}

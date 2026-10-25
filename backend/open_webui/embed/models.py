@@ -4,11 +4,13 @@ import asyncio
 import copy
 import hashlib
 import json
+import re
 import time
 import aiohttp
 from fastapi import HTTPException
 from starlette.responses import JSONResponse
 from .gateway import connection, headers
+from .settings import settings
 
 CACHE_TTL = 60
 MAX_CACHE_ENTRIES = 256
@@ -77,10 +79,10 @@ def install_error_handler(app):
     app.add_exception_handler(GatewayModelError, handle)
 
 
-async def fetch_models(url):
+async def fetch_models(url, image=False):
     try:
         async with aiohttp.ClientSession(trust_env=True, timeout=aiohttp.ClientTimeout(total=15)) as session:
-            async with session.get(url + '/models', headers=headers(), allow_redirects=False) as response:
+            async with session.get(url + '/models', headers=headers(image=image), allow_redirects=False) as response:
                 if response.status != 200:
                     raise GatewayModelError.from_body(response.status, await response.text(errors='replace'))
                 try:
@@ -95,8 +97,8 @@ async def fetch_models(url):
         raise GatewayModelError(502, 'GATEWAY_UNREACHABLE', 'Unable to reach gateway') from None
 
 
-async def gateway_models(request, refresh=False):
-    url, key, _ = connection()
+async def gateway_models(request, refresh=False, *, image=False):
+    url, key, _ = connection(image=image)
     digest = hashlib.sha256(key.encode()).hexdigest()
     state = request.app.state
     if not hasattr(state, 'SUB2API_MODEL_CACHE'):
@@ -110,7 +112,7 @@ async def gateway_models(request, refresh=False):
         else:
             # Refresh failures invalidate only this Key, never cache a failure or serve its stale success.
             cache.pop(digest, None)
-            body = await fetch_models(url)
+            body = await fetch_models(url, image=image)
             # Do not let a gateway metadata field turn a model into a pipe/direct URL.
             models = [
                 {
@@ -130,3 +132,11 @@ async def gateway_models(request, refresh=False):
             cache[digest] = (time.monotonic(), copy.deepcopy(models))
         state.OPENAI_MODELS.update({m['id']: copy.deepcopy(m) for m in models})
         return {'data': models}
+
+
+def visible_chat_models(models):
+    """List-only hiding: never trim the per-Key cache or model dispatch metadata."""
+    if not settings.enabled or not settings.hidden_chat_models:
+        return models
+    hidden = re.compile(settings.hidden_chat_models, re.IGNORECASE)
+    return [model for model in models if not hidden.search(model['id'])]

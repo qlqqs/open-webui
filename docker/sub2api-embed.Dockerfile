@@ -45,7 +45,8 @@ ENV S2A_EMBED_MODE=1 \
     S2A_NATIVE_WEB_SEARCH=true \
     S2A_BUILTIN_TOOL_CATEGORIES=time,user_input,files,chats,notes,tasks,calendar,image_generation \
     S2A_SLIM_DOC_LOADERS=true \
-    S2A_IMAGE_MAX_N=4
+    S2A_IMAGE_MAX_N=4 \
+    S2A_HIDDEN_CHAT_MODELS="^codex-auto-review|^gpt-reserve|gpt-image|dall-?e|imagen|^grok-.*image|seedream|flux"
 
 # sub2api-embed: explicit audit mirror of embed/settings.py::configure_environment.
 # Python enforces these again, including URLs derived from S2A_GATEWAY_URL.
@@ -103,9 +104,9 @@ ENV AIOHTTP_CLIENT_ALLOW_REDIRECTS="false" \
     ENABLE_VERSION_UPDATE_CHECK="false" \
     ENABLE_WEB_SEARCH="false" \
     IMAGE_EDIT_ENGINE="openai" \
-    IMAGE_EDIT_MODEL="gpt-image-1" \
+    IMAGE_EDIT_MODEL="gpt-image-2" \
     IMAGE_GENERATION_ENGINE="openai" \
-    IMAGE_GENERATION_MODEL="gpt-image-1" \
+    IMAGE_GENERATION_MODEL="gpt-image-2" \
     OFFLINE_MODE="true" \
     OLLAMA_BASE_URL="http://sub2api:8080" \
     OPENAI_API_BASE_URL="http://sub2api:8080/v1" \
