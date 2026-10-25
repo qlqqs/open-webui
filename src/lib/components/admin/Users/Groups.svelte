@@ -3,9 +3,10 @@
 </script>
 
 <script>
+	import { localStorage } from '$lib/embed/storage';
 	import { toast } from 'svelte-sonner';
 	import { onMount, getContext } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 
 	import { adminGroupCount, user } from '$lib/stores';
 

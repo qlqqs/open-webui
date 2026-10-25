@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import DOMPurify from 'dompurify';

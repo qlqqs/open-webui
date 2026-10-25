@@ -1,4 +1,5 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
 	import { toast } from 'svelte-sonner';
 	import { onMount, getContext } from 'svelte';
 	import { page } from '$app/stores';

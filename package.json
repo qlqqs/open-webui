@@ -24,7 +24,12 @@
 		"i18n:parse": "i18next --config i18next-parser.config.ts && prettier --write \"src/lib/i18n/**/*.{js,json}\"",
 		"cy:open": "cypress open",
 		"test:frontend": "vitest --passWithNoTests",
-		"pyodide:fetch": "node scripts/prepare-pyodide.js"
+		"pyodide:fetch": "node scripts/prepare-pyodide.js",
+		"embed:codemod": "node scripts/embed-codemod.mjs",
+		"embed:check": "node scripts/embed-codemod.mjs --check",
+		"embed:postbuild": "node scripts/embed-postbuild.mjs",
+		"build:embed": "npm run crypto:verify && vite build && node scripts/embed-postbuild.mjs",
+		"test:embed": "vitest run src/lib/embed"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "3.2.2",

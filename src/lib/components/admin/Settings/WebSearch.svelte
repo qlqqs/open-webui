@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getRAGConfig, updateRAGConfig } from '$lib/apis/retrieval';
 	import Switch from '$lib/components/common/Switch.svelte';
 

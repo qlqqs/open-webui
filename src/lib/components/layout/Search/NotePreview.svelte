@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onDestroy, tick } from 'svelte';
 	import { getNoteById } from '$lib/apis/notes';
 	import PreviewMarkdown from './PreviewMarkdown.svelte';

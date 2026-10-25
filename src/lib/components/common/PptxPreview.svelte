@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext, onDestroy, onMount, tick } from 'svelte';
 	import panzoom, { type PanZoom } from 'panzoom';
 	import { clampDocumentTargetPage } from '$lib/utils/documentPreview';
@@ -284,7 +285,7 @@
 						: 'opacity-55 hover:opacity-80'}"
 				>
 					<img
-						src={slide}
+						src={withBase(slide)}
 						alt="{itemLabel} {index + 1} thumbnail"
 						class="block w-full h-full object-contain"
 						draggable="false"
@@ -309,7 +310,7 @@
 			>
 				<img
 					bind:this={slideImgEl}
-					src={selectedSlide}
+					src={withBase(selectedSlide)}
 					alt="{itemLabel} {safeSlide + 1}"
 					class="block w-full h-full object-contain rounded"
 					draggable="false"

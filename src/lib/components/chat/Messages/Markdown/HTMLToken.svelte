@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import DOMPurify from 'dompurify';
 	import type { Token } from 'marked';
 	import { getContext } from 'svelte';
@@ -28,7 +29,7 @@
 			<!-- svelte-ignore a11y-media-has-caption -->
 			<video
 				class="w-full my-2"
-				src={videoSrc.replaceAll('&amp;', '&')}
+				src={withBase(videoSrc.replaceAll('&amp;', '&'))}
 				title={$i18n.t('Video player')}
 				frameborder="0"
 				referrerpolicy="strict-origin-when-cross-origin"
@@ -45,7 +46,7 @@
 			<!-- svelte-ignore a11y-media-has-caption -->
 			<audio
 				class="w-full my-2"
-				src={audioSrc.replaceAll('&amp;', '&')}
+				src={withBase(audioSrc.replaceAll('&amp;', '&'))}
 				title={$i18n.t('Audio player')}
 				controls
 			></audio>
@@ -75,7 +76,7 @@
 		{#if iframeSrc}
 			<iframe
 				class="w-full my-2"
-				src={iframeSrc}
+				src={withBase(iframeSrc)}
 				title={$i18n.t('Embedded content')}
 				frameborder="0"
 				sandbox

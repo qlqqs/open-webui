@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext, onMount } from 'svelte';
 	import { mfaRequest, type MfaChallenge } from '$lib/apis/auths/mfa';
 	import MfaRecoveryCodes from './MfaRecoveryCodes.svelte';
@@ -95,7 +96,7 @@
 			{#if setup}
 				<img
 					class="mx-auto size-40 bg-white p-1"
-					src={setup.qr_code}
+					src={withBase(setup.qr_code)}
 					alt={$i18n.t('Authenticator setup QR code')}
 				/>
 				<details class="group text-[0.6875rem] text-gray-500 dark:text-gray-400">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { createEventDispatcher, onDestroy, onMount } from 'svelte';
 
 	import Collapsible from '$lib/components/common/Collapsible.svelte';

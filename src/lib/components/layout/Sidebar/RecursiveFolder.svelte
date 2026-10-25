@@ -3,6 +3,8 @@
 </script>
 
 <script>
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { getContext, createEventDispatcher, onMount, onDestroy, tick } from 'svelte';
 
 	const i18n = getContext('i18n');
@@ -13,7 +15,7 @@
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { toast } from 'svelte-sonner';
 
 	import { chatId, mobile, selectedFolder, showSidebar, user } from '$lib/stores';
@@ -843,7 +845,7 @@
 							bind:open={openPreview}
 						>
 							<LinkPreview.Trigger
-								href={`/folders/${folderId}`}
+								href={withBase(`/folders/${folderId}`)}
 								draggable="false"
 								class="flex min-w-0 flex-1 self-stretch -my-1 items-center gap-1.5"
 								ondblclick={(e) => {

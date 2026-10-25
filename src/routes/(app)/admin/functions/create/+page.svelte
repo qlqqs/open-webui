@@ -1,7 +1,8 @@
 <script>
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import { toast } from 'svelte-sonner';
 	import { onMount, getContext } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 
 	import { config, functions, models, settings } from '$lib/stores';
 	import { createNewFunction, getFunctions } from '$lib/apis/functions';

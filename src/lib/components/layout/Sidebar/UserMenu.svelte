@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { BASE } from '$lib/embed/paths';
 	import { createEventDispatcher, getContext, onMount, tick } from 'svelte';
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { fade, slide } from 'svelte/transition';
 
 	import { getUsage } from '$lib/apis';
@@ -246,7 +248,7 @@
 					class="user-menu-row flex items-center w-full rounded-xl hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
 				>
 					<a
-						href="/workspace"
+						href="{BASE}/workspace"
 						draggable="false"
 						class="flex flex-1 min-w-0 h-[1.6875rem] items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none"
 						on:click={async (e) => {
@@ -292,7 +294,7 @@
 					class="user-menu-row flex items-center w-full rounded-xl hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
 				>
 					<a
-						href="/notes"
+						href="{BASE}/notes"
 						draggable="false"
 						class="flex flex-1 min-w-0 h-[1.6875rem] items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none"
 						on:click={async (e) => {
@@ -338,7 +340,7 @@
 					class="user-menu-row flex items-center w-full rounded-xl hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
 				>
 					<a
-						href="/calendar"
+						href="{BASE}/calendar"
 						draggable="false"
 						class="flex flex-1 min-w-0 h-[1.6875rem] items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none"
 						on:click={async (e) => {
@@ -384,7 +386,7 @@
 					class="user-menu-row flex items-center w-full rounded-xl hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
 				>
 					<a
-						href="/automations"
+						href="{BASE}/automations"
 						draggable="false"
 						class="flex flex-1 min-w-0 h-[1.6875rem] items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none"
 						on:click={async (e) => {
@@ -430,7 +432,7 @@
 					class="user-menu-row flex items-center w-full rounded-xl hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
 				>
 					<a
-						href="/playground"
+						href="{BASE}/playground"
 						draggable="false"
 						class="flex flex-1 min-w-0 h-[1.6875rem] items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none"
 						on:click={async (e) => {
@@ -536,7 +538,7 @@
 
 			{#if role === 'admin'}
 				<a
-					href="/admin"
+					href="{BASE}/admin"
 					draggable="false"
 					class="flex h-[1.6875rem] items-center gap-2 rounded-xl px-2 text-[0.8125rem] w-full hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition cursor-pointer select-none"
 					on:click={async (e) => {

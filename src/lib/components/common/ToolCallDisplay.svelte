@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { decode } from 'html-entities';
 	import { v4 as uuidv4 } from 'uuid';
 
@@ -183,7 +184,7 @@
 			{#each embeds as embed, idx}
 				<div class="my-2" id={`${componentId}-tool-call-embed-${idx}`}>
 					<FullHeightIframe
-						src={embed}
+						src={withBase(embed)}
 						{args}
 						allowScripts={true}
 						allowForms={$settings?.iframeSandboxAllowForms ?? false}
@@ -372,11 +373,11 @@
 			{#each files ?? [] as file, idx}
 				{#if typeof file === 'string'}
 					{#if file.startsWith('data:image/')}
-						<Image id={`${componentId}-tool-call-result-${idx}`} src={file} alt="Image" />
+						<Image id={`${componentId}-tool-call-result-${idx}`} src={withBase(file)} alt="Image" />
 					{/if}
 				{:else if typeof file === 'object'}
 					{#if (file.type === 'image' || (file?.content_type ?? '').startsWith('image/')) && file.url}
-						<Image id={`${componentId}-tool-call-result-${idx}`} src={file.url} alt="Image" />
+						<Image id={`${componentId}-tool-call-result-${idx}`} src={withBase(file.url)} alt="Image" />
 					{/if}
 				{/if}
 			{/each}

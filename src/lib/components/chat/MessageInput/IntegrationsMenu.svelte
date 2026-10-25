@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { resolveLocalizedResource, resolveLocalizedFunction } from '$lib/utils/localizedContent';
 	import { functions as localizedFunctions } from '$lib/stores';
 	import { getContext, onDestroy, tick } from 'svelte';
@@ -390,7 +392,7 @@
 												{#if filter?.icon}
 													<div class="size-3.5 items-center flex justify-center">
 														<img
-															src={filter.icon}
+															src={withBase(filter.icon)}
 															class="size-3.5 {filter.icon.includes('data:image/svg')
 																? 'dark:invert-[80%]'
 																: ''}"

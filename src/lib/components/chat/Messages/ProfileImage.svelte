@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { WEBUI_BASE_URL } from '$lib/constants';
 	import { safeImageUrl } from '$lib/utils/safeImageUrl';
 
@@ -14,7 +15,7 @@
 
 <img
 	aria-hidden="true"
-	src={safeImageUrl(src, allowExternal)}
+	src={withBase(safeImageUrl(src, allowExternal))}
 	class=" {className} object-cover rounded-2xl"
 	alt="profile"
 	draggable="false"

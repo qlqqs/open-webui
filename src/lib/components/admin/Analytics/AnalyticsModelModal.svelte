@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import { getContext } from 'svelte';
 	import { getModelChats, getModelOverview } from '$lib/apis/analytics';

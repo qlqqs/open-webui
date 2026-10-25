@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	// Keep keys in nested template expressions visible to i18next-parser.
 	// $i18n.t("and");
 	// $i18n.t("and {{COUNT}} others");
@@ -364,13 +366,13 @@
 									// LICENSE covers this Open WebUI fallback logo.
 									// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 									// https://docs.openwebui.com/license.
-									e.currentTarget.src = '/favicon.png';
+									e.currentTarget.src = withBase('/favicon.png');
 								}}
 							/>
 						{:else if message.reply_to_message.app_id}
 							{#if message.reply_to_message.user?.profile_image_url}
 								<ProfileImage
-									src={message.reply_to_message.user.profile_image_url}
+									src={withBase(message.reply_to_message.user.profile_image_url)}
 									allowExternal
 									className="size-4 ml-0.5 rounded!"
 								/>
@@ -379,9 +381,9 @@
 							{/if}
 						{:else}
 							<img
-								src={message.reply_to_message.user?.role === 'webhook'
+								src={withBase(message.reply_to_message.user?.role === 'webhook'
 									? `${WEBUI_API_BASE_URL}/channels/webhooks/${message.reply_to_message.user?.id}/profile/image`
-									: `${WEBUI_API_BASE_URL}/users/${message.reply_to_message.user?.id}/profile/image`}
+									: `${WEBUI_API_BASE_URL}/users/${message.reply_to_message.user?.id}/profile/image`)}
 								alt={message.reply_to_message.user?.name ?? $i18n.t('Unknown User')}
 								class="size-4 ml-0.5 rounded-full object-cover"
 							/>
@@ -423,13 +425,13 @@
 									// LICENSE covers this Open WebUI fallback logo.
 									// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 									// https://docs.openwebui.com/license.
-									e.currentTarget.src = '/favicon.png';
+									e.currentTarget.src = withBase('/favicon.png');
 								}}
 							/>
 						{:else if message.app_id}
 							{#if message.user?.profile_image_url}
 								<ProfileImage
-									src={message.user.profile_image_url}
+									src={withBase(message.user.profile_image_url)}
 									allowExternal
 									className="size-6 mt-0.5 rounded-lg!"
 								/>
@@ -536,9 +538,9 @@
 										: `${WEBUI_API_BASE_URL}/files/${file.url}${file?.content_type ? '/content' : ''}`}
 								<div>
 									{#if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
-										<Image src={fileUrl} alt={file.name} imageClassName=" max-h-96 rounded-lg" />
+										<Image src={withBase(fileUrl)} alt={file.name} imageClassName=" max-h-96 rounded-lg" />
 									{:else if file.type === 'video' || (file?.content_type ?? '').startsWith('video/')}
-										<video src={fileUrl} controls class=" max-h-96 rounded-lg"></video>
+										<video src={withBase(fileUrl)} controls class=" max-h-96 rounded-lg"></video>
 									{:else}
 										<FileItem
 											item={file}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import WorkspaceAccessModal from './common/WorkspaceAccessModal.svelte';
 	let accessModal: WorkspaceAccessModal;
 	import { resolveLocalizedResource } from '$lib/utils/localizedContent';
@@ -22,7 +23,7 @@
 		workspaceCounts
 	} from '$lib/stores';
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import {
 		createNewTool,
 		loadToolByUrl,

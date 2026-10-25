@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import ModelSettingsLabel from './ModelSettingsLabel.svelte';
 	import { resolveLocalizedResource } from '$lib/utils/localizedContent';
 	import { createEventDispatcher, getContext, tick } from 'svelte';
@@ -247,7 +248,7 @@
 						>{/if}
 					<div class="ml-auto flex items-center gap-3">
 						{#if workspaceHref}<a
-								href={workspaceHref}
+								href={withBase(workspaceHref)}
 								target="_blank"
 								rel="noreferrer"
 								class="hover:text-gray-900 dark:hover:text-gray-100">{$i18n.t('Manage')}</a

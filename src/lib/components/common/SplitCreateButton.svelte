@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import type { Writable } from 'svelte/store';
 	import type { i18n as i18nType } from 'i18next';
 
@@ -85,7 +86,7 @@
 						{@const Icon = getActionIcon(action.id)}
 						{#if action.href}
 							<a
-								href={action.href}
+								href={withBase(action.href)}
 								on:click={(e) => {
 									showMenu = false;
 									if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;

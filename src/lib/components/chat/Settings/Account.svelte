@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { canUseApiKeys } from '$lib/utils/settings-access';
 	import { toast } from 'svelte-sonner';
 	import { onMount, getContext } from 'svelte';

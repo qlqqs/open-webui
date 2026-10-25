@@ -1,10 +1,11 @@
 <script lang="ts">
+	import { stripBase, withBase } from '$lib/embed/paths';
 	import DOMPurify from 'dompurify';
 	import { toast } from 'svelte-sonner';
 
 	import type { Token, Tokens } from 'marked';
 	import { getContext } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 
 	const i18n = getContext('i18n');
 	const terminalDocument = getContext<
@@ -46,7 +47,7 @@
 		try {
 			const url = new URL(href, window.location.origin);
 			if (url.origin === window.location.origin) {
-				const match = url.pathname.match(/^\/notes\/([^/]+)$/);
+				const match = stripBase(url.pathname).match(/^\/notes\/([^/]+)$/);
 				if (match) {
 					return match[1];
 				}
@@ -81,9 +82,9 @@
 			// Check if same origin and an in-app route
 			if (
 				url.origin === window.location.origin &&
-				(url.pathname.startsWith('/notes/') ||
-					url.pathname.startsWith('/c/') ||
-					url.pathname.startsWith('/channels/'))
+				(stripBase(url.pathname).startsWith('/notes/') ||
+					stripBase(url.pathname).startsWith('/c/') ||
+					stripBase(url.pathname).startsWith('/channels/'))
 			) {
 				e.preventDefault();
 				goto(url.pathname + url.search + url.hash);
@@ -110,10 +111,10 @@
 	{:else if token.type === 'link'}
 		{@const linkToken = getLinkToken(token)}
 		{#if linkToken.noteId && !markdown?.document && markdown?.allowRemoteContent !== false}
-			<NoteLinkToken noteId={linkToken.noteId} href={linkToken.href} />
+			<NoteLinkToken noteId={linkToken.noteId} href={withBase(linkToken.href)} />
 		{:else if token.tokens && !linkToken.isAutolink}
 			<a
-				href={linkToken.safeHref}
+				href={withBase(linkToken.safeHref)}
 				target="_blank"
 				rel="nofollow"
 				title={token.title}
@@ -123,7 +124,7 @@
 			</a>
 		{:else}
 			<a
-				href={linkToken.safeHref}
+				href={withBase(linkToken.safeHref)}
 				target="_blank"
 				rel="nofollow"
 				title={token.title}
@@ -135,11 +136,11 @@
 			{#await terminalDocument.resolveImage(token.href)}
 				<span class="text-xs text-gray-400">{token.text}</span>
 			{:then url}
-				{#if url}<img src={url} alt={token.text} data-terminal-resolved="true" />{:else}<span
+				{#if url}<img src={withBase(url)} alt={token.text} data-terminal-resolved="true" />{:else}<span
 						class="text-xs text-gray-400">Image unavailable: {token.text}</span
 					>{/if}
 			{/await}
-		{:else}<Image src={token.href} alt={token.text} allowExternal={true} />{/if}
+		{:else}<Image src={withBase(token.href)} alt={token.text} allowExternal={true} />{/if}
 	{:else if token.type === 'strong'}
 		<strong
 			><svelte:self id={`${id}-strong`} tokens={token.tokens} {sourceIds} {onSourceClick} /></strong

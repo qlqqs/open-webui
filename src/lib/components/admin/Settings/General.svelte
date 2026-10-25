@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import DOMPurify from 'dompurify';
 	import { v4 as uuidv4 } from 'uuid';
 
@@ -92,7 +94,7 @@
 			if (!res) throw new Error($i18n.t('Failed to update settings'));
 			if (res.sessions_revoked) {
 				localStorage.removeItem('token');
-				window.location.href = '/auth?state=logout&form=signin';
+				window.location.href = withBase('/auth?state=logout&form=signin');
 				return;
 			}
 			await updateI18n(res.I18N ?? cleaned);

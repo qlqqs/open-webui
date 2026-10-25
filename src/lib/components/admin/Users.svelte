@@ -1,7 +1,9 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
+	import { BASE, stripBase } from '$lib/embed/paths';
 	import { getContext, onMount } from 'svelte';
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { adminGroupCount, adminUserCount, config, user } from '$lib/stores';
 	import { page } from '$app/stores';
 	import { getGroups } from '$lib/apis/groups';
@@ -15,7 +17,7 @@
 
 	let selectedTab;
 	$: {
-		const pathParts = $page.url.pathname.split('/');
+		const pathParts = stripBase($page.url.pathname).split('/');
 		const tabFromPath = pathParts[pathParts.length - 1];
 		selectedTab = ['overview', 'groups'].includes(tabFromPath) ? tabFromPath : 'overview';
 	}
@@ -88,7 +90,7 @@
 		>
 			<a
 				id="overview"
-				href="/admin/users/overview"
+				href="{BASE}/admin/users/overview"
 				draggable="false"
 				class="px-0.5 py-1 min-w-fit rounded-lg lg:flex-none flex items-center gap-1.5 text-right transition select-none {selectedTab ===
 				'overview'
@@ -109,7 +111,7 @@
 
 			<a
 				id="groups"
-				href="/admin/users/groups"
+				href="{BASE}/admin/users/groups"
 				draggable="false"
 				class="px-0.5 py-1 min-w-fit rounded-lg lg:flex-none flex items-center gap-1.5 text-right transition select-none {selectedTab ===
 				'groups'

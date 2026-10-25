@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import type { Writable } from 'svelte/store';
 
@@ -226,7 +227,7 @@
 				<a
 					class="flex min-w-0 flex-1 justify-between items-center"
 					draggable="false"
-					href={`/c/${chat.id}`}
+					href={withBase(`/c/${chat.id}`)}
 					on:click={() => markChatRead(chat, unread)}
 				>
 					<div class="flex min-w-0 items-center w-full sm:basis-3/5">

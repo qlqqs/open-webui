@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { stripBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -17,7 +19,7 @@
 
 	import { slide } from 'svelte/transition';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 
 	import ShareChatModal from '../chat/ShareChatModal.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
@@ -195,7 +197,7 @@
 											await temporaryChatEnabled.set(!$temporaryChatEnabled);
 										}
 
-										if ($page.url.pathname !== '/') {
+										if (stripBase($page.url.pathname) !== '/') {
 											await goto('/');
 										}
 

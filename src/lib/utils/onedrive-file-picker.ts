@@ -1,3 +1,4 @@
+import { withBase } from '$lib/embed/paths';
 import type { PopupRequest, PublicClientApplication } from '@azure/msal-browser';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -32,7 +33,7 @@ class OneDriveConfig {
 	}
 
 	private async getCredentials(): Promise<void> {
-		const response = await fetch('/api/config', {
+		const response = await fetch(withBase('/api/config'), {
 			headers: {
 				'Content-Type': 'application/json'
 			},

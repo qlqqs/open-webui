@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import ModelSettingsLabel from './ModelSettingsLabel.svelte';
 	import { toast } from 'svelte-sonner';
 	import { v4 as uuidv4 } from 'uuid';
-	import { beforeNavigate, goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$lib/embed/navigation';
 	import { getModels } from '$lib/apis';
 	import ModelHistory from './ModelHistory.svelte';
 	import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
@@ -1005,7 +1007,7 @@
 								>
 									{#if backgroundPreview || info.meta.background_image_url}
 										<img
-											src={backgroundPreview ?? info.meta.background_image_url}
+											src={withBase(backgroundPreview ?? info.meta.background_image_url)}
 											alt={$i18n.t('Background image preview')}
 											class="[mask-image:linear-gradient(to_bottom,black_15%,rgba(0,0,0,0.65)_40%,transparent_85%)] absolute inset-0 h-full w-full rounded-xl object-cover"
 										/>
@@ -1041,7 +1043,7 @@
 											>
 												{#if info.meta.profile_image_url}
 													<img
-														src={info.meta.profile_image_url}
+														src={withBase(info.meta.profile_image_url)}
 														alt={$i18n.t('model profile')}
 														class="size-full object-cover"
 													/>

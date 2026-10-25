@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { embed, showControls, showEmbeds } from '$lib/stores';
 	import { isValidHttpUrl } from '$lib/utils';
@@ -192,7 +193,7 @@
 								// LICENSE covers this Open WebUI fallback logo.
 								// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 								// https://docs.openwebui.com/license.
-								e.target.src = '/favicon.png';
+								e.target.src = withBase('/favicon.png');
 							}}
 						/>
 					{/each}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { BASE, stripBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { WEBUI_NAME, showSidebar, mobile } from '$lib/stores';
 	import { page } from '$app/stores';
@@ -53,34 +54,34 @@
 					<a
 						draggable="false"
 						class="min-w-fit px-1 text-sm {['/playground', '/playground/'].includes(
-							$page.url.pathname
+							stripBase($page.url.pathname)
 						)
 							? ''
 							: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition select-none"
-						href="/playground">{$i18n.t('Chat')}</a
+						href="{BASE}/playground">{$i18n.t('Chat')}</a
 					>
 
 					<!-- <a
-						class="min-w-fit p-1.5 {$page.url.pathname.includes('/playground/notes')
+						class="min-w-fit p-1.5 {stripBase($page.url.pathname).includes('/playground/notes')
 							? ''
 							: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition"
-						href="/playground/notes">{$i18n.t('Notes')}</a
+						href="{BASE}/playground/notes">{$i18n.t('Notes')}</a
 					> -->
 
 					<a
 						draggable="false"
-						class="min-w-fit px-1 text-sm {$page.url.pathname.includes('/playground/completions')
+						class="min-w-fit px-1 text-sm {stripBase($page.url.pathname).includes('/playground/completions')
 							? ''
 							: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition select-none"
-						href="/playground/completions">{$i18n.t('Completions')}</a
+						href="{BASE}/playground/completions">{$i18n.t('Completions')}</a
 					>
 
 					<a
 						draggable="false"
-						class="min-w-fit px-1 text-sm {$page.url.pathname.includes('/playground/images')
+						class="min-w-fit px-1 text-sm {stripBase($page.url.pathname).includes('/playground/images')
 							? ''
 							: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition select-none"
-						href="/playground/images">{$i18n.t('Images')}</a
+						href="{BASE}/playground/images">{$i18n.t('Images')}</a
 					>
 				</div>
 			</div>

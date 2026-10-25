@@ -1,4 +1,5 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onMount, tick } from 'svelte';
 	import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
 	import ModelSettingsLabel from '$lib/components/workspace/Models/ModelSettingsLabel.svelte';

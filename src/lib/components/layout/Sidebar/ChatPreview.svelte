@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onDestroy, tick } from 'svelte';
 	import { getChatById, getChatByShareId } from '$lib/apis/chats';
 	import { convertMessagesToHistory, getDeepestChildId } from '$lib/utils';

@@ -1,3 +1,4 @@
+import { withBase } from '$lib/embed/paths';
 import { WEBUI_BASE_URL } from '$lib/constants';
 
 // LICENSE covers this Open WebUI fallback logo.
@@ -28,10 +29,13 @@ export function safeImageUrl(url: string, allowExternal = false): string {
 		(WEBUI_BASE_URL && url.startsWith(WEBUI_BASE_URL)) ||
 		url.startsWith('https://www.gravatar.com/avatar/') ||
 		(allowExternal && /^https?:\/\//i.test(url)) ||
-		url.startsWith('data:') ||
-		url.startsWith('/')
+		url.startsWith('data:')
 	) {
 		return url;
+	}
+
+	if (url.startsWith('/') && !url.startsWith('//')) {
+		return withBase(url);
 	}
 
 	return `${WEBUI_BASE_URL}${PLACEHOLDER_IMAGE}`;

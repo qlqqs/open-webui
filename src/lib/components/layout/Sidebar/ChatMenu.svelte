@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, tick } from 'svelte';
 
 	import fileSaver from 'file-saver';

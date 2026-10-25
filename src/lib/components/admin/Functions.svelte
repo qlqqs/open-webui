@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import { resolveLocalizedResource } from '$lib/utils/localizedContent';
 	import dayjs from 'dayjs';
 	import relativeTime from 'dayjs/plugin/relativeTime';
@@ -11,7 +12,7 @@
 	import { WEBUI_NAME, config, functions as _functions, models, settings, user } from '$lib/stores';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import {
 		createNewFunction,
 		deleteFunctionById,

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import Collapsible from '$lib/components/common/Collapsible.svelte';
 	import ToolCallDisplay from '$lib/components/common/ToolCallDisplay.svelte';
 	import TerminalOutputFile from './TerminalOutputFile.svelte';

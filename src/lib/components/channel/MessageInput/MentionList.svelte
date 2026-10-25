@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import ProfileImage from '$lib/components/chat/Messages/ProfileImage.svelte';
 	import { getAbortSignal, getContext, onMount } from 'svelte';
 	const i18n = getContext('i18n');
@@ -239,7 +241,7 @@
 						{:else if item.type === 'app'}
 							{#if item.profile_image_url}
 								<ProfileImage
-									src={item.profile_image_url}
+									src={withBase(item.profile_image_url)}
 									allowExternal
 									className="size-5 mr-2 rounded-lg!"
 								/>
@@ -253,7 +255,7 @@
 									// LICENSE covers this Open WebUI fallback logo.
 									// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 									// https://docs.openwebui.com/license.
-									e.currentTarget.src = '/favicon.png';
+									e.currentTarget.src = withBase('/favicon.png');
 								}}
 							/>
 						{:else if item.type === 'user'}
@@ -265,7 +267,7 @@
 									// LICENSE covers this Open WebUI fallback logo.
 									// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 									// https://docs.openwebui.com/license.
-									e.currentTarget.src = '/favicon.png';
+									e.currentTarget.src = withBase('/favicon.png');
 								}}
 							/>
 						{/if}

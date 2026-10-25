@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
+	import { stripBase, withBase } from '$lib/embed/paths';
 	import type { TerminalContext } from '$lib/types';
 	import { v4 as uuidv4 } from 'uuid';
 	import { toast } from 'svelte-sonner';
@@ -7,7 +9,7 @@
 	import { fade } from 'svelte/transition';
 	const i18n: Writable<i18nType> = getContext('i18n');
 
-	import { goto, beforeNavigate } from '$app/navigation';
+	import { goto, beforeNavigate } from '$lib/embed/navigation';
 	import { page } from '$app/stores';
 
 	import { get, type Unsubscriber, type Writable } from 'svelte/store';
@@ -2744,8 +2746,8 @@
 		await showCallOverlay.set(false);
 		await showArtifacts.set(false);
 
-		if (!embedded && $page.url.pathname.includes('/c/')) {
-			window.history.replaceState(window.history.state, '', `/`);
+		if (!embedded && stripBase($page.url.pathname).includes('/c/')) {
+			window.history.replaceState(window.history.state, '', withBase(`/`));
 		}
 
 		autoScroll = true;
@@ -4447,7 +4449,7 @@
 					if (!$temporaryChatEnabled && !embedded) {
 						// Carry the picks made on the new-chat page over to this chat
 						saveDraft(getChatInputDraft(), res.chat_id, false);
-						window.history.replaceState(window.history.state, '', `/c/${res.chat_id}`);
+						window.history.replaceState(window.history.state, '', withBase(`/c/${res.chat_id}`));
 						await refreshChatList(localStorage.token);
 
 						// Persist chat-level params (system prompt, advanced
@@ -4710,7 +4712,7 @@
 
 			if (!embedded) {
 				saveDraft(getChatInputDraft(), _chatId, false);
-				window.history.replaceState(window.history.state, '', `/c/${_chatId}`);
+				window.history.replaceState(window.history.state, '', withBase(`/c/${_chatId}`));
 			}
 
 			await tick();

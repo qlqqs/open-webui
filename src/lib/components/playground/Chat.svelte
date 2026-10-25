@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { v4 as uuidv4 } from 'uuid';
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
 
 	import { toast } from 'svelte-sonner';
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { onMount, tick, getContext } from 'svelte';
 
 	import {

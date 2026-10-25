@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
@@ -84,7 +85,7 @@
 									// LICENSE covers this Open WebUI fallback logo.
 									// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 									// https://docs.openwebui.com/license.
-									e.currentTarget.src = '/favicon.png';
+									e.currentTarget.src = withBase('/favicon.png');
 								}}
 							/>
 						</Tooltip>

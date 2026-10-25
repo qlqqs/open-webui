@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import type { TerminalContext } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 	import { marked } from 'marked';
@@ -173,7 +175,7 @@
 												// LICENSE covers this Open WebUI fallback logo.
 												// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 												// https://docs.openwebui.com/license.
-												e.currentTarget.src = '/favicon.png';
+												e.currentTarget.src = withBase('/favicon.png');
 											}}
 										/>
 									</button>

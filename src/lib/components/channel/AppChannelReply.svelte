@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { createEventDispatcher } from 'svelte';
 	import AppEmbed from './AppEmbed.svelte';
 	import type { Embed } from '$lib/apis/apps';
@@ -75,7 +77,7 @@
 			{#each reply.actions as item, index}
 				{#if item.url}
 					<a
-						href={item.url}
+						href={withBase(item.url)}
 						target="_blank"
 						rel="noopener noreferrer"
 						class="focus-ring inline-flex min-h-7 max-w-full items-center rounded-lg border border-gray-200 px-2.5 text-xs hover:bg-gray-100 dark:border-white/8 dark:hover:bg-gray-850"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { onDestroy, onMount, tick, getContext } from 'svelte';
 
 	import { isRasterImageContentType } from '$lib/utils';

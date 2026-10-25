@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { BASE, stripBase } from '$lib/embed/paths';
 	import { toast } from 'svelte-sonner';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
 	const i18n = getContext('i18n');
@@ -81,8 +83,8 @@
 	id="sidebar-channel-item"
 	bind:this={itemElement}
 	class:opacity-60={channel?.is_channel_muted}
-	class=" w-full {className} rounded-xl flex relative group hover:bg-gray-100 dark:hover:bg-gray-900 {$page
-		.url.pathname === `/channels/${channel.id}`
+	class=" w-full {className} rounded-xl flex relative group hover:bg-gray-100 dark:hover:bg-gray-900 {stripBase($page
+		.url.pathname) === `/channels/${channel.id}`
 		? 'bg-gray-100 dark:bg-gray-900 selected'
 		: ''} {channel?.type === 'dm' ? 'px-1 py-[0.1875rem]' : 'p-1'}  {channel?.unread_count > 0 &&
 	!channel?.is_channel_muted
@@ -126,7 +128,7 @@
 	{/if}
 	<a
 		class="min-w-0 flex flex-1"
-		href="/channels/{channel.id}"
+		href="{BASE}/channels/{channel.id}"
 		title={channel?.is_channel_muted
 			? $i18n.t('Muted. Direct @mentions can still notify you.')
 			: undefined}

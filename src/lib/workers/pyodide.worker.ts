@@ -25,7 +25,7 @@ async function loadPyodideAndPackages(packages: string[] = []) {
 	self.result = null;
 
 	self.pyodide = await loadPyodide({
-		indexURL: '/pyodide/',
+		indexURL: self.location.pathname.split('/_app/')[0] + '/pyodide/',
 		stdout: (text) => {
 			console.log('Python output:', text);
 

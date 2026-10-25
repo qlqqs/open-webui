@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { adminLeaderboardCount, models } from '$lib/stores';
 	import { getLeaderboard } from '$lib/apis/evaluations';
@@ -217,7 +219,7 @@
 											// LICENSE covers this Open WebUI fallback logo.
 											// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 											// https://docs.openwebui.com/license.
-											e.target.src = '/favicon.png';
+											e.target.src = withBase('/favicon.png');
 										}}
 									/>
 									<Tooltip content={`${model.name} (${model.id})`} placement="top-start">

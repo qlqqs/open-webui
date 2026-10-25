@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext, onMount, tick } from 'svelte';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
@@ -113,11 +114,11 @@
 						>
 							<a
 								class="hover:text-gray-500 dark:hover:text-gray-100 underline grow line-clamp-1"
-								href={document?.metadata?.file_id
+								href={withBase(document?.metadata?.file_id
 									? `${WEBUI_API_BASE_URL}/files/${document?.metadata?.file_id}/content${document?.metadata?.page !== undefined ? `#page=${document.metadata.page + 1}` : ''}`
 									: isValidHttpUrl(document.source?.url)
 										? document.source.url
-										: `#`}
+										: `#`)}
 								target="_blank"
 							>
 								{decodeString(citation?.source?.name)}
@@ -166,7 +167,7 @@
 									{@const snippetUrl = getTextFragmentUrl(document)}
 									{#if snippetUrl}
 										<a
-											href={snippetUrl}
+											href={withBase(snippetUrl)}
 											target="_blank"
 											class="underline hover:text-gray-500 dark:hover:text-gray-100"
 											>{$i18n.t('Content')}</a

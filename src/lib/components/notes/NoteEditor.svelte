@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onDestroy, onMount, tick } from 'svelte';
 	import { v4 as uuidv4 } from 'uuid';
 	import fileSaver from 'file-saver';
@@ -10,7 +11,7 @@
 	import { toast } from 'svelte-sonner';
 	import { equalEditorJSON } from '$lib/utils/editorJson';
 
-	import { goto, onNavigate } from '$app/navigation';
+	import { goto, onNavigate } from '$lib/embed/navigation';
 	import { page } from '$app/stores';
 
 	import dayjs from '$lib/dayjs';

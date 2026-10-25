@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { WEBUI_BASE_URL } from '$lib/constants';
 	import { safeImageUrl } from '$lib/utils/safeImageUrl';
 
@@ -25,7 +26,7 @@
 	const i18n = getContext('i18n');
 
 	let _src = '';
-	$: _src = safeImageUrl(src.startsWith('/') ? `${WEBUI_BASE_URL}${src}` : src, allowExternal);
+	$: _src = safeImageUrl(withBase(src), allowExternal);
 
 	let showImagePreview = false;
 
@@ -45,7 +46,7 @@
 </script>
 
 {#if !failed}
-	<ImagePreview bind:show={showImagePreview} src={_src} {alt} />
+	<ImagePreview bind:show={showImagePreview} src={withBase(_src)} {alt} />
 {/if}
 
 <div class=" relative group w-fit flex items-center">
@@ -71,7 +72,7 @@
 			type="button"
 		>
 			<img
-				src={_src}
+				src={withBase(_src)}
 				{alt}
 				class={imageClassName}
 				draggable="false"

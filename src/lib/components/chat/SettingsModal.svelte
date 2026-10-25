@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import english from '$lib/i18n/locales/en-US/translation.json';
 	import {
 		buildSettingsSearchIndex,

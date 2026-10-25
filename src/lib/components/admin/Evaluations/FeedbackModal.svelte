@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import { getContext } from 'svelte';
 	const i18n: any = getContext('i18n');
@@ -63,7 +65,7 @@
 
 							<div class="flex-1 text-xs">
 								<a
-									href={`/s/${selectedFeedback?.meta?.chat_id}`}
+									href={withBase(`/s/${selectedFeedback?.meta?.chat_id}`)}
 									class=" hover:underline"
 									target="_blank"
 								>

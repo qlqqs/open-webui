@@ -1,4 +1,5 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
 	import Sortable from 'sortablejs';
 
 	import { onMount, tick } from 'svelte';

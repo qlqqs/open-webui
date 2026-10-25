@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { decode } from 'html-entities';
 	import { onMount, getContext } from 'svelte';
 	import type { Readable } from 'svelte/store';

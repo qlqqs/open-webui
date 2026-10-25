@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import Fuse from 'fuse.js';
 	import { getContext, onDestroy, onMount, tick } from 'svelte';
 
@@ -345,7 +347,7 @@
 							// LICENSE covers this Open WebUI fallback logo.
 							// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 							// https://docs.openwebui.com/license.
-							(e.currentTarget as HTMLImageElement).src = '/favicon.png';
+							(e.currentTarget as HTMLImageElement).src = withBase('/favicon.png');
 						}}
 					/>
 					<div class="min-w-0 truncate">

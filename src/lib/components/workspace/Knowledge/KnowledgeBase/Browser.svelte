@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext, onDestroy } from 'svelte';
-	import { beforeNavigate, goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$lib/embed/navigation';
 	import { mobile } from '$lib/stores';
 	import { createFocusTrap } from 'focus-trap';
 	import Files from './Files.svelte';

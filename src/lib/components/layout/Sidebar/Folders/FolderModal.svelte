@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, createEventDispatcher, onMount, tick } from 'svelte';
 	import type { Writable } from 'svelte/store';
 	import type { i18n as I18n } from 'i18next';
@@ -11,7 +12,7 @@
 
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { user, config, models } from '$lib/stores';
 	import ModelSelector from '$lib/components/chat/ModelSelector/Selector.svelte';
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { onMount } from 'svelte';
 
 	import { socket, user } from '$lib/stores';

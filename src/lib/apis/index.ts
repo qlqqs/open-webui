@@ -1,3 +1,4 @@
+import { localStorage } from '$lib/embed/storage';
 import { get } from 'svelte/store';
 import { config } from '$lib/stores';
 import { WEBUI_BASE_URL } from '$lib/constants';

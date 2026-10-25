@@ -6,6 +6,7 @@
 </script>
 
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { config } from '$lib/stores';
 	import { injectCsp } from '$lib/utils/csp';
@@ -230,7 +231,7 @@ window.Chart = parent.Chart; // Chart previously assigned on parent
 {:else if iframeSrc}
 	<iframe
 		bind:this={iframe}
-		src={iframeSrc}
+		src={withBase(iframeSrc)}
 		{title}
 		class={iframeClassName}
 		style={`${initialHeight ? `height:${initialHeight}px;` : ''}`}

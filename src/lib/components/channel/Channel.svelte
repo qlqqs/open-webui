@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { toast } from 'svelte-sonner';
 
 	import { onDestroy, onMount, tick } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { page } from '$app/stores';
 	import { v4 as uuidv4 } from 'uuid';
 	import type { Socket } from 'socket.io-client';
@@ -107,7 +109,7 @@
 	$: if (channel && $page.url.searchParams.get('thread')) {
 		threadId = $page.url.searchParams.get('thread');
 		if (!$page.url.searchParams.has('message')) {
-			window.history.replaceState(history.state, '', `/channels/${id}`);
+			window.history.replaceState(history.state, '', withBase(`/channels/${id}`));
 		}
 	}
 

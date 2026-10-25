@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import EditPencilIcon from '$lib/components/layout/Sidebar/icons/EditPencil.svelte';
 	import CopyIcon from '$lib/components/layout/Sidebar/icons/Copy.svelte';
 	import TrashIcon from '$lib/components/layout/Sidebar/icons/Trash.svelte';
@@ -166,9 +167,9 @@
 			https://docs.openwebui.com/license. -->
 			<ProfilePreview user={{ id: authorId, name: authorName }}>
 				<ProfileImage
-					src={authorId
+					src={withBase(authorId
 						? `${WEBUI_API_BASE_URL}/users/${authorId}/profile/image`
-						: `${WEBUI_BASE_URL}/static/favicon.png`}
+						: `${WEBUI_BASE_URL}/static/favicon.png`)}
 					className={'size-7 user-message-profile-image'}
 				/>
 			</ProfilePreview>
@@ -211,7 +212,7 @@
 								class={($settings?.chatBubble ?? true) ? (isOwn ? 'self-end' : 'self-start') : ''}
 							>
 								{#if file.type === 'image' || isRasterImageContentType(file?.content_type)}
-									<Image src={fileUrl} imageClassName=" max-h-96 rounded-lg" />
+									<Image src={withBase(fileUrl)} imageClassName=" max-h-96 rounded-lg" />
 								{:else}
 									<FileItem
 										item={file}
@@ -246,7 +247,7 @@
 									<div class=" relative group">
 										<div class="relative flex items-center">
 											<Image
-												src={fileUrl}
+												src={withBase(fileUrl)}
 												alt="input"
 												imageClassName=" size-14 rounded-xl object-cover"
 											/>

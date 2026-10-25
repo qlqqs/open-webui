@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onMount } from 'svelte';
 	import { LinkPreview } from 'bits-ui';
 	import { getFolderById, getSharedFolderChats } from '$lib/apis/folders';

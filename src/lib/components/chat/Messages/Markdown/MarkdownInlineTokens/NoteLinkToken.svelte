@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { onMount, getContext } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { getNoteById } from '$lib/apis/notes';
 	import { getUserInfoById } from '$lib/apis/users';
 	import { capitalizeFirstLetter } from '$lib/utils';

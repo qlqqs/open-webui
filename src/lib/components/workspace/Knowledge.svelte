@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import WorkspaceAccessModal from './common/WorkspaceAccessModal.svelte';
 	let accessModal: WorkspaceAccessModal;
 	import dayjs from 'dayjs';
@@ -19,7 +20,7 @@
 		exportKnowledgeById
 	} from '$lib/apis/knowledge';
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { capitalizeFirstLetter } from '$lib/utils';
 
 	import DeleteConfirmDialog from '../common/ConfirmDialog.svelte';

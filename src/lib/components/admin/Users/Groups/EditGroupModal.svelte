@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { toast } from 'svelte-sonner';
 	import { getContext, onMount } from 'svelte';
 	const i18n = getContext<import('svelte/store').Writable<import('i18next').i18n>>('i18n');

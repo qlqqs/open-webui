@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { v4 as uuidv4 } from 'uuid';
 	import { config, settings, user as _user, mobile, temporaryChatEnabled } from '$lib/stores';
 	import { refreshChatList } from '$lib/stores/chatList';

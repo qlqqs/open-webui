@@ -1,3 +1,4 @@
+import { localStorage } from '$lib/embed/storage';
 import DOMPurify from 'dompurify';
 import { toast } from 'svelte-sonner';
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import Switch from '$lib/components/common/Switch.svelte';
 	import { config, settings } from '$lib/stores';
 	import { createEventDispatcher, onMount, getContext } from 'svelte';

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { onMount, getContext } from 'svelte';
 	import { models } from '$lib/stores';
 	import {
@@ -17,7 +19,7 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
 	import { formatNumber } from '$lib/utils';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import type { Instance } from 'tippy.js';
 
 	const i18n = getContext('i18n');
@@ -548,7 +550,7 @@
 													// LICENSE covers this Open WebUI fallback logo.
 													// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 													// https://docs.openwebui.com/license.
-													e.target.src = '/favicon.png';
+													e.target.src = withBase('/favicon.png');
 												}}
 											/>
 											<span class="truncate max-w-[9.375rem]">{model.name}</span>
@@ -660,7 +662,7 @@
 												alt={user.name || 'User'}
 												class="size-5 rounded-full object-cover shrink-0"
 												on:error={(e) => {
-													e.target.src = '/user.png';
+													e.target.src = withBase('/user.png');
 												}}
 											/>
 											<span class="truncate max-w-[9.375rem]"

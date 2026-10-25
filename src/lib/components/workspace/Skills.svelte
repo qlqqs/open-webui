@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { v4 as uuidv4 } from 'uuid';
 	import WorkspaceAccessModal from './common/WorkspaceAccessModal.svelte';
 	let accessModal: WorkspaceAccessModal;
@@ -21,7 +22,7 @@
 		workspaceActions,
 		workspaceCounts
 	} from '$lib/stores';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import {
 		getSkills,
 		getSkillItems,

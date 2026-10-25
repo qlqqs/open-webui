@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex,nofollow" />
+		<title></title>
+		<!--
+			sub2api embed: sandbox page for model-generated HTML (Artifacts, HTML previews, tool UIs,
+			HTML citations). Protocol: docs/sub2api-embed-frontend.md#artifact-frame.
+
+			Loaded as <iframe sandbox="allow-scripts …" src="/_chat/embed/artifact-frame.html"> without
+			allow-same-origin, so the content runs in an opaque origin: it cannot read the site's cookies
+			or storage. sub2api serves this exact path with its own CSP (connect-src 'none', no external
+			images / frames), so the content cannot make network requests either.
+		-->
+		<script>
+			(function () {
+				'use strict';
+				var PROTOCOL = 'sub2api-artifact';
+				var parentWin = window.parent;
+
+				// Refuse to run unless sandboxed into an opaque origin and framed: rendering untrusted HTML
+				// with this page's permissive CSP on the real origin would be an XSS.
+				var opaque = false;
+				try {
+					opaque = window.origin === 'null' || self.origin === 'null';
+				} catch (e) {
+					opaque = true;
+				}
+				if (!opaque || parentWin === window) {
+					document.addEventListener('DOMContentLoaded', function () {
+						document.body.textContent = 'artifact-frame: must be loaded in a sandboxed iframe';
+					});
+					return;
+				}
+
+				// Runs again as the first script of every rendered document (document.open() drops the
+				// listeners of this one). It only reports the content height and keeps link clicks inside.
+				function boot(autoHeight) {
+					var last = -1;
+					function report() {
+						var d = document.documentElement;
+						var b = document.body;
+						var h = Math.max(d ? d.scrollHeight : 0, b ? b.scrollHeight : 0);
+						if (h !== last) {
+							last = h;
+							window.parent.postMessage({ type: 'iframe:height', height: h }, '*');
+						}
+					}
+					if (autoHeight) {
+						if (typeof ResizeObserver === 'function') {
+							new ResizeObserver(report).observe(document.documentElement);
+						}
+						window.addEventListener('load', report);
+						document.addEventListener('DOMContentLoaded', report);
+					}
+					document.addEventListener(
+						'click',
+						function (e) {
+							var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+							if (!a) return;
+							var href = a.getAttribute('href') || '';
+							if (href.charAt(0) === '#') return;
+							e.preventDefault();
+						},
+						true
+					);
+				}
+
+				function render(msg) {
+					var html = typeof msg.html === 'string' ? msg.html : '';
+					var head =
+						'<script>(' + boot.toString() + ')(' + (msg.autoHeight ? 'true' : 'false') + ');<\/script>';
+					if (msg.scripts === false) {
+						head += '<meta http-equiv="Content-Security-Policy" content="script-src \'none\'">';
+					}
+					var i = html.search(/<head[^>]*>/i);
+					var doc;
+					if (i !== -1) {
+						var end = html.indexOf('>', i) + 1;
+						doc = html.slice(0, end) + head + html.slice(end);
+					} else {
+						var j = html.search(/<html[^>]*>/i);
+						if (j !== -1) {
+							var e2 = html.indexOf('>', j) + 1;
+							doc = html.slice(0, e2) + '<head>' + head + '</head>' + html.slice(e2);
+						} else {
+							doc = '<!doctype html><html><head><meta charset="utf-8">' + head + '</head><body>' + html + '</body></html>';
+						}
+					}
+					window.removeEventListener('message', onMessage);
+					document.open();
+					document.write(doc);
+					document.close();
+				}
+
+				var rendered = false;
+				function onMessage(event) {
+					if (event.source !== parentWin) return;
+					var msg = event.data;
+					if (!msg || msg.protocol !== PROTOCOL || msg.type !== 'render' || rendered) return;
+					rendered = true;
+					render(msg);
+				}
+				window.addEventListener('message', onMessage);
+				parentWin.postMessage({ protocol: PROTOCOL, type: 'ready' }, '*');
+			})();
+		</script>
+	</head>
+	<body></body>
+</html>

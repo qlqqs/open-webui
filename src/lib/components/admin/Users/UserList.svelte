@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
 	import { adminUserCount, config, user } from '$lib/stores';
 	import { getContext, onDestroy } from 'svelte';
@@ -379,7 +381,7 @@
 											// LICENSE covers this Open WebUI fallback logo.
 											// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 											// https://docs.openwebui.com/license.
-											e.currentTarget.src = '/favicon.png';
+											e.currentTarget.src = withBase('/favicon.png');
 										}}
 									/>
 								</ProfilePreview>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getModels, getTaskConfig, updateTaskConfig } from '$lib/apis';
 	import { getChatConfig, updateChatConfig } from '$lib/apis/chats';
 	import { onMount, getContext } from 'svelte';

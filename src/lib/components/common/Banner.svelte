@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { BASE } from '$lib/embed/paths';
 	import type { Banner } from '$lib/types';
 	import { resolveLocalizedString } from '$lib/utils/localizedContent';
 	import { onMount, createEventDispatcher, getContext } from 'svelte';
@@ -118,7 +119,7 @@
 				<div class="hidden md:flex group w-fit md:items-center">
 					<a
 						class="text-gray-700 dark:text-white text-xs font-normal underline"
-						href="/"
+						href="{BASE}/"
 						target="_blank"
 					>
 						{$i18n.t('Learn More')}

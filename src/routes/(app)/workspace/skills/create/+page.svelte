@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import { toast } from 'svelte-sonner';
 	import { skills, user, config } from '$lib/stores';
 	import { COMMUNITY_ORIGINS } from '$lib/constants';

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { safeLinkUrl } from '$lib/utils';
 	import CodeBlock from './CodeBlock.svelte';
@@ -98,7 +99,7 @@
 						<ul class="mt-1 list-disc pl-4 text-xs">
 							{#each codeExecution?.result?.files as file}
 								<li>
-									<a href={safeLinkUrl(file.url)} target="_blank">{file.name}</a>
+									<a href={withBase(safeLinkUrl(file.url))} target="_blank">{file.name}</a>
 								</li>
 							{/each}
 						</ul>

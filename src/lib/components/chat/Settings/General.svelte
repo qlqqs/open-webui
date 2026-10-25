@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import {
 		canEditSystemPrompt as allowSystemPrompt,
 		canEditParameters

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onMount } from 'svelte';
 	import VersionDiffContent from './VersionDiffContent.svelte';
 	import Icon from '$lib/components/chat/FileNav/Icon.svelte';

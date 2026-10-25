@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { onMount, getContext } from 'svelte';
 	import { getCodeExecutionConfig, setCodeExecutionConfig } from '$lib/apis/configs';
 

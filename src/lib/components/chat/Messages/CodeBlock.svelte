@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import hljs from 'highlight.js';
 	import { toast } from 'svelte-sonner';
 	import { getContext, onMount, tick, onDestroy } from 'svelte';
@@ -646,7 +648,7 @@
 										<div class="flex flex-col gap-2">
 											{#each files as file}
 												{#if file.type.startsWith('image')}
-													<img src={file.data} alt="Output" class=" w-full max-w-[36rem]" />
+													<img src={withBase(file.data)} alt="Output" class=" w-full max-w-[36rem]" />
 												{/if}
 											{/each}
 										</div>

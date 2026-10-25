@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { onMount, onDestroy, getContext, createEventDispatcher, tick } from 'svelte';
 	import { searchNotes } from '$lib/apis/notes';
 	import { searchKnowledgeBases, searchKnowledgeFiles } from '$lib/apis/knowledge';

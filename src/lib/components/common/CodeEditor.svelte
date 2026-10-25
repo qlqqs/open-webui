@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import '$lib/utils/codemirror';
 
 	import { basicSetup, EditorView } from 'codemirror';

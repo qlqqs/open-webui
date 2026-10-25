@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
 	import {

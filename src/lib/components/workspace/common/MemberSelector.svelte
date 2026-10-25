@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import ProfileImage from '$lib/components/chat/Messages/ProfileImage.svelte';
 	import { toast } from 'svelte-sonner';
 	import { getContext, onMount, onDestroy } from 'svelte';
@@ -360,7 +362,7 @@
 												>
 													{#if app.data.manifest.profile_image_url}
 														<ProfileImage
-															src={app.data.manifest.profile_image_url}
+															src={withBase(app.data.manifest.profile_image_url)}
 															allowExternal
 															className="size-6 rounded-lg!"
 														/>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onMount, onDestroy } from 'svelte';
 	import type { Readable } from 'svelte/store';
 	import type { i18n as I18n } from 'i18next';

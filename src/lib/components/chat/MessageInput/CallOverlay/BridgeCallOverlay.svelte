@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { createEventDispatcher, getContext, onMount } from 'svelte';
 	import { models, showCallOverlay } from '$lib/stores';
 	import type { RealtimeCall } from '$lib/utils/realtime';

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { BASE, withBase } from '$lib/embed/paths';
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
 
@@ -290,7 +292,7 @@
 									{/if}
 									<a
 										class={showUserInfo ? 'flex-1' : 'basis-3/5'}
-										href={shareUrl ? `/s/${chat.id}` : `/c/${chat.id}`}
+										href={withBase(shareUrl ? `/s/${chat.id}` : `/c/${chat.id}`)}
 										on:click={() => (show = false)}
 									>
 										<div class="text-ellipsis line-clamp-1 w-full">
@@ -352,7 +354,7 @@
 															on:click={async (e) => {
 																e.stopImmediatePropagation();
 																e.stopPropagation();
-																const shareUrl = `${window.location.origin}/s/${chat.share_id}`;
+																const shareUrl = `${window.location.origin}${BASE}/s/${chat.share_id}`;
 																await navigator.clipboard.writeText(shareUrl);
 																toast.success($i18n.t('Share link copied to clipboard.'));
 															}}
@@ -460,7 +462,7 @@
 														'border-b'} border-gray-50 dark:border-gray-850/30 text-xs"
 												>
 													<td class="px-3 py-1 w-2/3">
-														<a href="/c/{chat.id}" target="_blank">
+														<a href="{BASE}/c/{chat.id}" target="_blank">
 															<div class=" hover:underline line-clamp-1">
 																{chat.title}
 															</div>

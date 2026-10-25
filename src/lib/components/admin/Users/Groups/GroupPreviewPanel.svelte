@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext } from 'svelte';
 	import { getGroupPreview } from '$lib/apis/groups';
 	import Spinner from '$lib/components/common/Spinner.svelte';

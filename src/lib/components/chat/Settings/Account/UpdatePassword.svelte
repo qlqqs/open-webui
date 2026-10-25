@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { getLogoutRedirectUrl, updateUserPassword, userSignOut } from '$lib/apis/auths';

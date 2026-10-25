@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onMount } from 'svelte';
 	import type { Writable } from 'svelte/store';
 	import { updateUserSettings } from '$lib/apis/users';

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { marked } from 'marked';
 
 	import { getContext, tick } from 'svelte';
@@ -106,7 +107,7 @@
 							// LICENSE covers this Open WebUI fallback logo.
 							// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 							// https://docs.openwebui.com/license.
-							e.currentTarget.src = '/favicon.png';
+							e.currentTarget.src = withBase('/favicon.png');
 						}}
 					/>
 				</Tooltip>

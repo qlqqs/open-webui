@@ -15,13 +15,14 @@
 </script>
 
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import type { Tokens } from 'marked';
 	import { LinkPreview } from 'bits-ui';
 
 	import { getContext } from 'svelte';
 	import { browser } from '$app/environment';
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { channels, models } from '$lib/stores';
 	import UserStatusLinkPreview from '$lib/components/channel/Messages/Message/UserStatusLinkPreview.svelte';
 

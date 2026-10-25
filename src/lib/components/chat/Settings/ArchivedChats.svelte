@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	// @ts-ignore
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
@@ -8,7 +10,7 @@
 	import localizedFormat from 'dayjs/plugin/localizedFormat';
 	import { getContext, onMount } from 'svelte';
 	import type { Writable } from 'svelte/store';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { toast } from 'svelte-sonner';
 
 	import {
@@ -316,7 +318,7 @@
 					<div class="flex w-full justify-between gap-2 px-1 py-1 text-xs">
 						<a
 							class="mr-auto min-w-0 max-w-xl flex-1 self-center truncate text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white"
-							href={`/c/${chat.id}`}
+							href={withBase(`/c/${chat.id}`)}
 							title={chat?.title}
 							on:click={(event) => {
 								event.preventDefault();

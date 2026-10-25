@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import dayjs, { getDayjsLocale } from '$lib/dayjs';
 	import relativeTime from 'dayjs/plugin/relativeTime';
@@ -50,7 +51,7 @@
 	>
 		<Tooltip as="span" className="flex shrink-0" content={author} allowHTML={false}>
 			<ProfileImage
-				src={authorId ? `/api/v1/users/${authorId}/profile/image` : '/user.png'}
+				src={withBase(authorId ? withBase(`/api/v1/users/${authorId}/profile/image`) : withBase('/user.png'))}
 				className="size-4 shrink-0 rounded-full!"
 			/>
 		</Tooltip>

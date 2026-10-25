@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import Markdown from '$lib/components/chat/Messages/Markdown.svelte';
 	import type { Embed } from '$lib/apis/apps';
 
@@ -26,7 +27,7 @@
 			{#if embed.title}
 				<div class="text-sm font-semibold leading-5">
 					{#if embed.url}
-						<a href={embed.url} target="_blank" rel="noopener noreferrer" class="hover:underline"
+						<a href={withBase(embed.url)} target="_blank" rel="noopener noreferrer" class="hover:underline"
 							>{embed.title}</a
 						>
 					{:else}{embed.title}{/if}
@@ -38,7 +39,7 @@
 		</div>
 		{#if embed.thumbnail?.url && failedThumbnail !== embed.thumbnail.url}
 			<img
-				src={embed.thumbnail.url}
+				src={withBase(embed.thumbnail.url)}
 				alt=""
 				class="size-12 shrink-0 rounded-lg object-contain"
 				loading="lazy"

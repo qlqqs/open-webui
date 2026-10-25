@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	const i18n = getContext<typeof import('$lib/i18n').default>('i18n');
 
@@ -98,7 +99,7 @@
 		Do not alter, remove, obscure, or replace it except as LICENSE permits:
 		https://docs.openwebui.com/license. -->
 		<img
-			src={imageSrc || `${WEBUI_BASE_URL}/static/favicon.png`}
+			src={withBase(imageSrc || `${WEBUI_BASE_URL}/static/favicon.png`)}
 			class="rounded-full size-8 object-cover flex-shrink-0"
 			alt=""
 		/>
@@ -137,7 +138,7 @@
 					Do not alter, remove, obscure, or replace it except as LICENSE permits:
 					https://docs.openwebui.com/license. -->
 					<img
-						src={imageSrc || `${WEBUI_BASE_URL}/static/favicon.png`}
+						src={withBase(imageSrc || `${WEBUI_BASE_URL}/static/favicon.png`)}
 						class="size-8 object-cover"
 						alt=""
 					/>

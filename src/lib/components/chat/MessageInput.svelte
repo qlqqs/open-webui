@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
+	import { stripBase, withBase } from '$lib/embed/paths';
 	import type { TerminalContext } from '$lib/types';
 	import { resolveLocalizedFunction } from '$lib/utils/localizedContent';
 	import { functions as localizedFunctions } from '$lib/stores';
@@ -117,7 +119,7 @@
 	import ValvesModal from '../workspace/common/ValvesModal.svelte';
 	import Note from '../icons/Note.svelte';
 	import AskUserCard from './AskUserCard.svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import InputModal from '../common/InputModal.svelte';
 	import Skeleton from './Messages/Skeleton.svelte';
 	import Expand from '../icons/Expand.svelte';
@@ -594,7 +596,7 @@
 			await temporaryChatEnabled.set(!$temporaryChatEnabled);
 		}
 
-		if (location.pathname !== '/') {
+		if (stripBase(location.pathname) !== '/') {
 			await goto('/');
 		}
 
@@ -2054,7 +2056,7 @@
 											<div class=" relative group">
 												<div class="relative flex items-center">
 													<Image
-														src={fileUrl}
+														src={withBase(fileUrl)}
 														alt=""
 														imageClassName=" size-10 rounded-xl object-cover"
 													/>
@@ -2584,7 +2586,7 @@
 														{#if filter?.icon}
 															<div class="size-4 items-center flex justify-center">
 																<img
-																	src={filter.icon}
+																	src={withBase(filter.icon)}
 																	class="size-3.5 {filter.icon.includes('data:image/svg')
 																		? 'dark:invert-[80%]'
 																		: ''}"

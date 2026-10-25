@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { toast } from 'svelte-sonner';
 	import { onMount, getContext } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 
 	import { user } from '$lib/stores';
 	import { imageGenerations, imageEdits } from '$lib/apis/images';
@@ -139,7 +141,7 @@
 										on:click={() => downloadImage(image.url, index)}
 									>
 										<img
-											src={image.url}
+											src={withBase(image.url)}
 											alt=""
 											class="w-full aspect-square object-cover rounded-lg border border-gray-100/30 dark:border-gray-850/30"
 										/>
@@ -184,7 +186,7 @@
 							{#each sourceImages as image, index}
 								<div class=" relative group">
 									<div class="relative flex items-center">
-										<img src={image} alt="" class="size-10 rounded-xl object-cover" />
+										<img src={withBase(image)} alt="" class="size-10 rounded-xl object-cover" />
 									</div>
 									<div class=" absolute -top-1 -right-1">
 										<button

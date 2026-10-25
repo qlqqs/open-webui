@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
 
@@ -92,7 +94,7 @@
 			}}
 		>
 			<img
-				src={profileImageUrl !== '' ? profileImageUrl : generateInitialsImage(user?.name)}
+				src={withBase(profileImageUrl !== '' ? profileImageUrl : generateInitialsImage(user?.name))}
 				alt="profile"
 				class="h-full w-full object-cover"
 			/>
@@ -182,7 +184,7 @@
 				}}
 			>
 				<img
-					src={profileImageUrl !== '' ? profileImageUrl : generateInitialsImage(user?.name)}
+					src={withBase(profileImageUrl !== '' ? profileImageUrl : generateInitialsImage(user?.name))}
 					alt="profile"
 					class=" rounded-full {imageClassName} object-cover"
 				/>

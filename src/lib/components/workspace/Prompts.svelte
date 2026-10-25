@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
 	import WorkspaceAccessModal from './common/WorkspaceAccessModal.svelte';
 	let accessModal: WorkspaceAccessModal;
 	import dayjs from 'dayjs';
@@ -9,7 +10,7 @@
 
 	dayjs.extend(relativeTime);
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
 	import type { Writable } from 'svelte/store';
 	import type { i18n as i18nType } from 'i18next';

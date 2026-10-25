@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { getGroupMembers } from '$lib/apis/groups';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
@@ -67,7 +69,7 @@
 								{#each member.via_group_ids as id}
 									<a
 										class="block truncate rounded-sm transition hover:text-gray-700 hover:underline dark:hover:text-gray-200"
-										href={`/admin/users/groups?id=${id}`}
+										href={withBase(`/admin/users/groups?id=${id}`)}
 										title={groups.find((group) => group.id === id)?.path || id}
 									>
 										{groups.find((group) => group.id === id)?.path || id}

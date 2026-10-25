@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onMount, tick } from 'svelte';
 	import type { Readable } from 'svelte/store';
 	import { settings, terminalServers, selectedTerminalId } from '$lib/stores';

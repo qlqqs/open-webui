@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { toast } from 'svelte-sonner';
 	import { v4 as uuidv4 } from 'uuid';
 
@@ -9,7 +10,7 @@
 
 	const i18n = getContext<Writable<i18nType>>('i18n');
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { page } from '$app/stores';
 	import { config, user, settings } from '$lib/stores';
 

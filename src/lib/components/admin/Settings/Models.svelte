@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { marked } from 'marked';
 	import Sortable from 'sortablejs';
 	import fileSaver from 'file-saver';
@@ -61,7 +63,7 @@
 	import GlobeAlt from '$lib/components/icons/GlobeAlt.svelte';
 	import LockClosed from '$lib/components/icons/LockClosed.svelte';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import DropdownMenu from '$lib/components/common/DropdownMenu.svelte';
@@ -1061,7 +1063,7 @@
 														// LICENSE covers this Open WebUI fallback logo.
 														// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 														// https://docs.openwebui.com/license.
-														e.target.src = '/favicon.png';
+														e.target.src = withBase('/favicon.png');
 													}}
 												/>
 											</div>

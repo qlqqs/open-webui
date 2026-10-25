@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { marked } from 'marked';
 	import Fuse from 'fuse.js';
 	import { autoUpdate, computePosition, flip, offset, shift, size } from '@floating-ui/dom';

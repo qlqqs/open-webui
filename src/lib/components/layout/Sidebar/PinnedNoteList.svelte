@@ -1,4 +1,6 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import Sortable from 'sortablejs';
 
 	import { onMount, getContext, tick } from 'svelte';
@@ -68,7 +70,7 @@
 		>
 			<a
 				class="grow flex items-center gap-2.5 text-[0.8125rem] leading-5"
-				href={`/notes/${note.id}`}
+				href={withBase(`/notes/${note.id}`)}
 				on:click={() => {
 					selectedChatId = null;
 					chatId.set('');

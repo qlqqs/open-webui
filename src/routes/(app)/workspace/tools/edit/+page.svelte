@@ -1,5 +1,6 @@
 <script>
-	import { goto } from '$app/navigation';
+	import { localStorage } from '$lib/embed/storage';
+	import { goto } from '$lib/embed/navigation';
 	import { page } from '$app/stores';
 	import { getToolById, getTools, updateToolById } from '$lib/apis/tools';
 	import Spinner from '$lib/components/common/Spinner.svelte';

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import EditPencilIcon from '$lib/components/layout/Sidebar/icons/EditPencil.svelte';
 	import CopyIcon from '$lib/components/layout/Sidebar/icons/Copy.svelte';
 	import TrashIcon from '$lib/components/layout/Sidebar/icons/Trash.svelte';
@@ -724,7 +726,7 @@
 								{#each message.files.filter((f) => ['image', 'file'].includes(f.type)) as file}
 									<div>
 										{#if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
-											<Image src={file.url} alt={file.name || $i18n.t('Generated Image')} />
+											<Image src={withBase(file.url)} alt={file.name || $i18n.t('Generated Image')} />
 										{:else}
 											<FileItem
 												item={file}
@@ -748,7 +750,7 @@
 								{#each message.embeds as embed, idx}
 									<div class="my-2 w-full" id={`${message.id}-embeds-${idx}`}>
 										<FullHeightIframe
-											src={embed}
+											src={withBase(embed)}
 											allowScripts={true}
 											allowForms={$settings?.iframeSandboxAllowForms ?? true}
 											allowSameOrigin={$settings?.iframeSandboxAllowSameOrigin ?? false}
@@ -1600,7 +1602,7 @@
 												{#if action?.icon}
 													<div class="size-4">
 														<img
-															src={action.icon}
+															src={withBase(action.icon)}
 															class="w-4 h-4 {action.icon.includes('data:image/svg')
 																? 'dark:invert-[80%]'
 																: ''}"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { getPortProxyUrl } from '$lib/apis/terminal';
 	import { settings } from '$lib/stores';
@@ -266,7 +267,7 @@
 		{#key iframeKey}
 			<iframe
 				bind:this={iframeEl}
-				src={proxyUrl}
+				src={withBase(proxyUrl)}
 				title="Port {port} preview"
 				class="w-full h-full border-0 bg-white"
 				sandbox="allow-scripts{($settings?.terminalPreviewAllowSameOrigin ?? false)

@@ -1,4 +1,5 @@
 <script>
+	import { BASE } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	const i18n = getContext('i18n');
 
@@ -46,7 +47,7 @@
 			<img
 				id="logo"
 				crossorigin="anonymous"
-				src="/static/favicon.png"
+				src="{BASE}/static/favicon.png"
 				class="size-6 rounded-full"
 				alt="logo"
 			/>
@@ -55,13 +56,13 @@
 		<video
 			bind:this={videoElement}
 			class="absolute inset-0 h-full w-full object-cover"
-			src="/assets/welcome.mp4"
+			src="{BASE}/assets/welcome.mp4"
 			autoplay
 			muted
 			loop
 			playsinline
 			preload="auto"
-			poster="/assets/welcome.webp"
+			poster="{BASE}/assets/welcome.webp"
 			aria-hidden="true"
 		></video>
 

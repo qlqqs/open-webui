@@ -6,28 +6,28 @@
 		visual, textual, symbolic identifiers, metadata, and surrounding UI.
 		Do not alter, remove, obscure, or replace it except as LICENSE permits:
 		https://docs.openwebui.com/license. -->
-		<link rel="icon" type="image/png" href="/static/favicon.png" crossorigin="use-credentials" />
+		<link rel="icon" type="image/png" href="%sveltekit.assets%/static/favicon.png" crossorigin="use-credentials" />
 		<link
 			rel="icon"
 			type="image/png"
-			href="/static/favicon-96x96.png"
+			href="%sveltekit.assets%/static/favicon-96x96.png"
 			sizes="96x96"
 			crossorigin="use-credentials"
 		/>
 		<link
 			rel="icon"
 			type="image/svg+xml"
-			href="/static/favicon.svg"
+			href="%sveltekit.assets%/static/favicon.svg"
 			crossorigin="use-credentials"
 		/>
-		<link rel="shortcut icon" href="/static/favicon.ico" crossorigin="use-credentials" />
+		<link rel="shortcut icon" href="%sveltekit.assets%/static/favicon.ico" crossorigin="use-credentials" />
 		<link
 			rel="apple-touch-icon"
 			sizes="180x180"
-			href="/static/apple-touch-icon.png"
+			href="%sveltekit.assets%/static/apple-touch-icon.png"
 			crossorigin="use-credentials"
 		/>
-		<link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+		<link rel="manifest" href="%sveltekit.assets%/manifest.json" crossorigin="use-credentials" />
 		<meta
 			name="viewport"
 			content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
@@ -35,39 +35,46 @@
 		<meta name="theme-color" content="#171717" />
 		<meta name="robots" content="noindex,nofollow" />
 
-		<script src="/static/loader.js" defer crossorigin="use-credentials"></script>
-		<link rel="stylesheet" href="/static/custom.css" crossorigin="use-credentials" />
+		<script src="%sveltekit.assets%/static/loader.js" defer crossorigin="use-credentials"></script>
+		<link rel="stylesheet" href="%sveltekit.assets%/static/custom.css" crossorigin="use-credentials" />
 
 		<script>
-			function resizeIframe(obj) {
-				obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 'px';
-			}
+			// sub2api-embed boot: see src/lib/embed/theme.ts (theme query) and mode.ts (branding cache)
+			(() => {
+				try {
+					const q = new URLSearchParams(location.search).get('theme');
+					if (q === 'light' || q === 'dark') localStorage.setItem('owui:theme', q);
+					const hide = localStorage.getItem('owui:s2a:hide-branding');
+					if (hide === '1' || (hide === null && window.self !== window.top)) {
+						document.documentElement.classList.add('s2a-hide-branding');
+					}
+				} catch (e) {}
+			})();
 		</script>
-
 		<script>
 			// On page load or when changing themes, best to add inline in `head` to avoid FOUC
 			(() => {
 				const metaThemeColorTag = document.querySelector('meta[name="theme-color"]');
 				const prefersDarkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-				if (!localStorage?.theme) {
-					localStorage.theme = 'system';
+				if (!localStorage?.['owui:theme']) {
+					localStorage['owui:theme'] = 'system';
 				}
 
-				if (localStorage.theme === 'system') {
+				if (localStorage['owui:theme'] === 'system') {
 					document.documentElement.classList.add(prefersDarkTheme ? 'dark' : 'light');
 					metaThemeColorTag.setAttribute('content', prefersDarkTheme ? '#171717' : '#ffffff');
-				} else if (localStorage.theme === 'oled-dark') {
+				} else if (localStorage['owui:theme'] === 'oled-dark') {
 					document.documentElement.style.setProperty('--color-gray-800', '#101010');
 					document.documentElement.style.setProperty('--color-gray-850', '#050505');
 					document.documentElement.style.setProperty('--color-gray-900', '#000000');
 					document.documentElement.style.setProperty('--color-gray-950', '#000000');
 					document.documentElement.classList.add('dark');
 					metaThemeColorTag.setAttribute('content', '#000000');
-				} else if (localStorage.theme === 'light') {
+				} else if (localStorage['owui:theme'] === 'light') {
 					document.documentElement.classList.add('light');
 					metaThemeColorTag.setAttribute('content', '#ffffff');
-				} else if (localStorage.theme === 'her') {
+				} else if (localStorage['owui:theme'] === 'her') {
 					document.documentElement.classList.add('her');
 					metaThemeColorTag.setAttribute('content', '#983724');
 				} else {
@@ -79,8 +86,8 @@
 				// Do not alter, remove, obscure, or replace them except as LICENSE permits:
 				// https://docs.openwebui.com/license.
 				const preloadHref = document.documentElement.classList.contains('dark')
-					? '/static/splash-dark.png'
-					: '/static/splash.png';
+					? '%sveltekit.assets%/static/splash-dark.png'
+					: '%sveltekit.assets%/static/splash.png';
 				const preload = document.createElement('link');
 				preload.rel = 'preload';
 				preload.as = 'image';
@@ -89,7 +96,7 @@
 				document.head.appendChild(preload);
 
 				window.matchMedia('(prefers-color-scheme: dark)').addListener((e) => {
-					if (localStorage.theme === 'system') {
+					if (localStorage['owui:theme'] === 'system') {
 						if (e.matches) {
 							document.documentElement.classList.add('dark');
 							document.documentElement.classList.remove('light');
@@ -112,7 +119,7 @@
 				// LICENSE covers this Open WebUI splash logo.
 				// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 				// https://docs.openwebui.com/license.
-				logo.src = isDarkMode ? '/static/splash-dark.png' : '/static/splash.png';
+				logo.src = isDarkMode ? '%sveltekit.assets%/static/splash-dark.png' : '%sveltekit.assets%/static/splash.png';
 
 				document.addEventListener('DOMContentLoaded', function () {
 					const splash = document.getElementById('splash-screen');
@@ -163,7 +170,7 @@
 				<img
 					id="logo-her"
 					style="width: auto; height: 13rem"
-					src="/static/splash.png"
+					src="%sveltekit.assets%/static/splash.png"
 					loading="eager"
 					fetchpriority="high"
 					class="animate-pulse-fast"
@@ -234,6 +241,12 @@
 
 		html.her #logo {
 			display: none;
+		}
+
+		/* sub2api-embed: no splash branding inside the console iframe */
+		html.s2a-hide-branding #logo,
+		html.s2a-hide-branding #logo-her {
+			display: none !important;
 		}
 
 		html.her #logo-her {

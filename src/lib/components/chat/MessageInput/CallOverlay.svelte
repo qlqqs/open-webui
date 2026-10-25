@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { config, models, settings, showCallOverlay, TTSWorker } from '$lib/stores';
 	import { onMount, tick, getContext, onDestroy, createEventDispatcher } from 'svelte';
 

@@ -1,5 +1,5 @@
 <script>
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
 	import Spinner from './Spinner.svelte';
@@ -182,7 +183,7 @@
 							: 'opacity-55 hover:opacity-80'}"
 					>
 						<img
-							src={thumbnail}
+							src={withBase(thumbnail)}
 							alt="{itemLabel} {index + 1} thumbnail"
 							class="block w-full h-full object-contain"
 							draggable="false"

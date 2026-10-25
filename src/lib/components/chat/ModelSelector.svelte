@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { models, pinnedModels, settings, user } from '$lib/stores';
 	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';

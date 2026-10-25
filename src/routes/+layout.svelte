@@ -1,4 +1,6 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
+	import { BASE, stripBase, withBase } from '$lib/embed/paths';
 	import { io } from 'socket.io-client';
 	import { spring } from 'svelte/motion';
 	import { createPyodideWorker } from '$lib/pyodide/createPyodideWorker';
@@ -42,9 +44,9 @@
 	} from '$lib/stores';
 	import { refreshChatList } from '$lib/stores/chatList';
 	import { getFileContentById } from '$lib/apis/files';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { page } from '$app/stores';
-	import { beforeNavigate } from '$app/navigation';
+	import { beforeNavigate } from '$lib/embed/navigation';
 	import { updated } from '$app/state';
 
 	import i18n, { initI18n, getLanguages, changeLanguage } from '$lib/i18n';
@@ -177,12 +179,12 @@
 	};
 
 	const setupSocket = async (enableWebsocket) => {
-		const _socket = io(`${WEBUI_BASE_URL}` || undefined, {
+		const _socket = io(undefined, {
 			reconnection: true,
 			reconnectionDelay: 1000,
 			reconnectionDelayMax: 5000,
 			randomizationFactor: 0.5,
-			path: '/ws/socket.io',
+			path: withBase('/ws/socket.io'),
 			transports: enableWebsocket ? ['websocket'] : ['polling', 'websocket'],
 			auth: (cb) => cb({ token: localStorage.token })
 		});
@@ -595,7 +597,7 @@
 			});
 			return;
 		}
-		const chat = $page.url.pathname.includes(`/c/${event.chat_id}`);
+		const chat = stripBase($page.url.pathname).includes(`/c/${event.chat_id}`);
 
 		// Skip events from temporary chats that are not the current chat.
 		// This prevents notifications from being sent to other tabs/devices
@@ -787,7 +789,7 @@
 					) {
 						playingNotificationSound.set(true);
 
-						const audio = new Audio(`/audio/notification.mp3`);
+						const audio = new Audio(withBase(`/audio/notification.mp3`));
 						audio.play().finally(() => {
 							// Ensure the global state is reset after the sound finishes
 							playingNotificationSound.set(false);
@@ -861,7 +863,7 @@
 		}
 
 		// check url path
-		const channel = $page.url.pathname.includes(`/channels/${event.channel_id}`);
+		const channel = stripBase($page.url.pathname).includes(`/channels/${event.channel_id}`);
 
 		let isInBackground = document.visibilityState !== 'visible';
 		if (window.electronAPI) {
@@ -1007,7 +1009,7 @@
 		user.set(null);
 		localStorage.removeItem('token');
 		// Clear the OAuth token cookie so /auth doesn't auto-login and redirect-loop
-		document.cookie = 'token=; Max-Age=0; path=/';
+		document.cookie = `token=; Max-Age=0; path=${BASE || '/'}`;
 		userSignOut().catch((error) => {
 			console.error('Error signing out expired session:', error);
 		});
@@ -1323,7 +1325,7 @@
 			if (error?.authRedirect) {
 				// Forward-auth proxy is redirecting to an external login page.
 				// Full-page navigation lets the browser follow the redirect natively.
-				window.location.href = '/';
+				window.location.href = withBase('/');
 				return;
 			}
 			console.error('Error loading backend config:', error);
@@ -1414,7 +1416,7 @@
 
 			document.getElementById('splash-screen')?.remove();
 
-			const audio = new Audio(`/audio/greeting.mp3`);
+			const audio = new Audio(withBase(`/audio/greeting.mp3`));
 			const playAudio = () => {
 				audio.play();
 				document.removeEventListener('click', playAudio);
@@ -1477,7 +1479,7 @@
 		rel="search"
 		type="application/opensearchdescription+xml"
 		title={$WEBUI_NAME}
-		href="/opensearch.xml"
+		href="{BASE}/opensearch.xml"
 		crossorigin="use-credentials"
 	/>
 </svelte:head>

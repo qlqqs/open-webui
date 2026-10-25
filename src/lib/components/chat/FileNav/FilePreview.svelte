@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext, tick } from 'svelte';
 	import MarkdownDocument from './MarkdownDocument.svelte';
 	import { settings, config } from '$lib/stores';
@@ -300,7 +301,7 @@
 			options={{ zoomDoubleClickSpeed: 1 }}
 		>
 			<img
-				src={fileImageUrl}
+				src={withBase(fileImageUrl)}
 				alt={selectedFile?.split('/').pop()}
 				class="max-w-full max-h-full object-contain p-3"
 				draggable="false"
@@ -309,13 +310,13 @@
 	{:else if fileVideoUrl !== null}
 		<div class="w-full h-full flex items-center justify-center bg-black">
 			<!-- svelte-ignore a11y-media-has-caption -->
-			<video src={fileVideoUrl} controls class="max-w-full max-h-full">
+			<video src={withBase(fileVideoUrl)} controls class="max-w-full max-h-full">
 				{$i18n.t('Your browser does not support the video tag.')}
 			</video>
 		</div>
 	{:else if fileAudioUrl !== null}
 		<div class="w-full h-full flex items-center justify-center p-6">
-			<audio src={fileAudioUrl} controls class="w-full max-w-md">
+			<audio src={withBase(fileAudioUrl)} controls class="w-full max-w-md">
 				{$i18n.t('Your browser does not support the audio tag.')}
 			</audio>
 		</div>
@@ -382,7 +383,7 @@
 				<div class="absolute top-0 left-0 right-0 bottom-0 z-10"></div>
 			{/if}
 			<iframe
-				src={serveUrl}
+				src={withBase(serveUrl)}
 				sandbox="{(allowScripts ?? $settings?.iframeSandboxAllowScripts ?? true)
 					? 'allow-scripts'
 					: ''}{($settings?.iframeSandboxAllowDownloads ?? true)

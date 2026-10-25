@@ -1,7 +1,8 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
 	import { toast } from 'svelte-sonner';
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { getContext } from 'svelte';
 	const i18n = getContext('i18n');
 

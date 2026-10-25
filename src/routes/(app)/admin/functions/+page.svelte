@@ -1,7 +1,8 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
 	import { onMount } from 'svelte';
 	import { config, functions } from '$lib/stores';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 
 	import { getFunctions } from '$lib/apis/functions';
 	import Functions from '$lib/components/admin/Functions.svelte';

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import type { WorkBook } from 'xlsx';
 	import DOMPurify from 'dompurify';
 
@@ -261,13 +263,13 @@
 				<div>
 					<div class=" font-normal text-lg dark:text-gray-100">
 						<a
-							href={item?.type === 'file'
+							href={withBase(item?.type === 'file'
 								? item?.url?.startsWith('http')
 									? item.url
 									: `${WEBUI_API_BASE_URL}/files/${item?.id ?? item?.tempId}/content`
 								: item?.type === 'collection' && item?.id
 									? `/workspace/knowledge/${item.id}`
-									: safeLinkUrl(item?.url)}
+									: safeLinkUrl(item?.url))}
 							target="_blank"
 							rel="noreferrer"
 							class="hover:underline line-clamp-1"

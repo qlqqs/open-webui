@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import ProfileImage from '$lib/components/chat/Messages/ProfileImage.svelte';
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
 	import { WEBUI_NAME, config, user as _user, showSidebar } from '$lib/stores';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { onMount, getContext } from 'svelte';
 
 	import dayjs from 'dayjs';
@@ -234,7 +236,7 @@
 										>
 											{#if app.data.manifest.profile_image_url}
 												<ProfileImage
-													src={app.data.manifest.profile_image_url}
+													src={withBase(app.data.manifest.profile_image_url)}
 													allowExternal
 													className="size-6 rounded-lg!"
 												/>

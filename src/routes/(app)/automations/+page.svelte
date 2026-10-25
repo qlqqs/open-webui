@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { formatSchedule } from '$lib/utils/schedule';
 	import { onMount, onDestroy, getContext } from 'svelte';
 
 	import dayjs from '$lib/dayjs';
 	import relativeTime from 'dayjs/plugin/relativeTime';
 	import { toast } from 'svelte-sonner';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { WEBUI_NAME, user, config, channels, folders } from '$lib/stores';
 	import { getFolders } from '$lib/apis/folders';
 	import { getChannels } from '$lib/apis/channels';

@@ -1,4 +1,5 @@
 <script>
+	import { withBase } from '$lib/embed/paths';
 	import { createEventDispatcher, getContext, onMount } from 'svelte';
 	const i18n = getContext('i18n');
 	const dispatch = createEventDispatcher();
@@ -264,7 +265,7 @@
 								}}
 							>
 								<img
-									src={profileImageUrl}
+									src={withBase(profileImageUrl)}
 									class="size-16 rounded-full object-cover shrink-0"
 									alt={$i18n.t('Profile')}
 								/>

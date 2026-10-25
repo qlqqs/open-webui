@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import Modal from '../common/Modal.svelte';
 	import XMark from '../icons/XMark.svelte';
@@ -62,7 +63,7 @@
 		{#if data.mode === 'url'}
 			<p class="text-sm text-gray-500">{$i18n.t('Open this link to continue:')}</p>
 			<a
-				href={data.url}
+				href={withBase(data.url)}
 				target="_blank"
 				rel="noopener noreferrer"
 				class="text-sm underline break-all"

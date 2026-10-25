@@ -6,8 +6,9 @@
 </script>
 
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { mfaRequest } from '$lib/apis/auths/mfa';
 	import { user } from '$lib/stores';
 	import MfaChallengeForm from './MfaChallenge.svelte';

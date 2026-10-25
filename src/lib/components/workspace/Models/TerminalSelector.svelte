@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onMount } from 'svelte';
 	import ModelSettingsLabel from './ModelSettingsLabel.svelte';
 	import { getTerminalServers, type TerminalServer } from '$lib/apis/terminal';

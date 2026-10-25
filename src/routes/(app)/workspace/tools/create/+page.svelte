@@ -1,5 +1,6 @@
 <script>
-	import { goto } from '$app/navigation';
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
+	import { goto } from '$lib/embed/navigation';
 	import { createNewTool, getTools } from '$lib/apis/tools';
 	import ToolkitEditor from '$lib/components/workspace/Tools/ToolkitEditor.svelte';
 	import { COMMUNITY_ORIGINS, WEBUI_VERSION } from '$lib/constants';

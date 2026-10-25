@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { embed, showControls, showEmbeds } from '$lib/stores';
 
@@ -50,7 +51,7 @@
 			<div class="flex-1 flex items-center justify-between pl-2">
 				<a
 					class="flex items-center space-x-2 hover:underline"
-					href={$embed?.url}
+					href={withBase($embed?.url)}
 					target="_blank"
 					rel="noopener noreferrer"
 				>
@@ -77,7 +78,7 @@
 			{/if}
 
 			<FullHeightIframe
-				src={getSrcUrl($embed?.url ?? '', $embed?.chatId, $embed?.messageId, $embed?.sourceId)}
+				src={withBase(getSrcUrl($embed?.url ?? '', $embed?.chatId, $embed?.messageId, $embed?.sourceId))}
 				payload={$embed?.source ?? null}
 				iframeClassName="w-full h-full"
 			/>

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { localStorage } from '$lib/embed/storage';
+	import { goto } from '$lib/embed/navigation';
 	import { page } from '$app/stores';
 
 	import { socket, user } from '$lib/stores';

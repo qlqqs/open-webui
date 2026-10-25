@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { decode } from 'html-entities';
 	import { getContext } from 'svelte';
 	import type { Writable } from 'svelte/store';
@@ -314,7 +315,7 @@
 		{#each allEmbeds as embedItem, idx}
 			<div id={`${id}-embed-${idx}`}>
 				<FullHeightIframe
-					src={embedItem.embed}
+					src={withBase(embedItem.embed)}
 					args={embedItem.args}
 					allowScripts={true}
 					allowForms={$settings?.iframeSandboxAllowForms ?? false}

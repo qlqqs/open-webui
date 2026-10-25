@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, tick } from 'svelte';
 	import { models, user, mobile, settings, type Model } from '$lib/stores';
 	import Dropdown from '$lib/components/common/Dropdown.svelte';

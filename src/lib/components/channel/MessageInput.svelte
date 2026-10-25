@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { toast } from 'svelte-sonner';
 	import { v4 as uuidv4 } from 'uuid';
 
@@ -993,7 +995,7 @@
 											<div class=" relative group">
 												<div class="relative">
 													<Image
-														src={fileUrl}
+														src={withBase(fileUrl)}
 														alt=""
 														imageClassName=" size-10 rounded-xl object-cover"
 													/>

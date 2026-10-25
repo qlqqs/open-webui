@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { LinkPreview } from 'bits-ui';
 
 	import { getUserInfoById } from '$lib/apis/users';

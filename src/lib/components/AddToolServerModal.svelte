@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { v4 as uuidv4 } from 'uuid';
 
 	import fileSaver from 'file-saver';

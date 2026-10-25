@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import WorkspaceAccessModal from '$lib/components/workspace/common/WorkspaceAccessModal.svelte';
 	let accessModal: WorkspaceAccessModal;
 	import { marked } from 'marked';
@@ -18,7 +20,7 @@
 
 	const i18n = getContext<typeof import('$lib/i18n').default>('i18n');
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { WEBUI_NAME, config, user, pinnedNotes, mobile, showSidebar } from '$lib/stores';
 	import {
 		createNewNote,
@@ -735,7 +737,7 @@
 												class="group flex min-h-32 w-full flex-col rounded-lg bg-gray-50/40 p-2.5 text-left transition hover:bg-gray-100/60 focus-within:bg-gray-100/60 dark:bg-gray-900/30 dark:hover:bg-gray-900 dark:focus-within:bg-gray-900"
 											>
 												<div class="flex items-start gap-2">
-													<a href={`/notes/${note.id}`} class="min-w-0 flex-1">
+													<a href={withBase(`/notes/${note.id}`)} class="min-w-0 flex-1">
 														<Tooltip content={note.title} placement="top-start">
 															<div
 																class="truncate text-[0.8125rem] leading-5 text-gray-800 group-hover:underline dark:text-gray-200"
@@ -804,7 +806,7 @@
 													{/if}
 												</div>
 
-												<a href={`/notes/${note.id}`} class="mt-1 flex min-h-0 flex-1 flex-col">
+												<a href={withBase(`/notes/${note.id}`)} class="mt-1 flex min-h-0 flex-1 flex-col">
 													<div
 														class="line-clamp-3 text-xs leading-5 text-gray-500 dark:text-gray-500"
 													>

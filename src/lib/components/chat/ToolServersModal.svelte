@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getToolSpecs } from '$lib/apis/tools';
 	import { resolveLocalizedResource } from '$lib/utils/localizedContent';
 	import { getContext } from 'svelte';

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { safeLinkUrl } from '$lib/utils';
 
 	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
@@ -61,7 +62,7 @@
 		{#if status?.items}
 			{#each status.items as item, itemIdx}
 				<a
-					href={safeLinkUrl(item.link)}
+					href={withBase(safeLinkUrl(item.link))}
 					target="_blank"
 					class="flex w-full items-center p-1 px-3 group/item justify-between text-gray-800 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850 rounded-lg font-normal! no-underline! mb-1"
 				>
@@ -101,7 +102,7 @@
 		{:else if status?.urls}
 			{#each status.urls as url, urlIdx}
 				<a
-					href={safeLinkUrl(url)}
+					href={withBase(safeLinkUrl(url))}
 					target="_blank"
 					class="flex w-full items-center p-1 px-3 group/item justify-between text-gray-800 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850 rounded-lg no-underline mb-1"
 				>

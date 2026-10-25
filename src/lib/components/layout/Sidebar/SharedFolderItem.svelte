@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, createEventDispatcher } from 'svelte';
 	import type { Writable } from 'svelte/store';
 
 	const i18n: Writable<any> = getContext('i18n');
 	const dispatch = createEventDispatcher();
 
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { chatId, mobile, showSidebar } from '$lib/stores';
 	import { getSharedFolderChats } from '$lib/apis/folders';
 

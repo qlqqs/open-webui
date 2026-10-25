@@ -1,4 +1,5 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
 	import { onMount } from 'svelte';
 	import { config, models, settings } from '$lib/stores';
 	import { getModels } from '$lib/apis';

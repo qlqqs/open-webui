@@ -101,7 +101,7 @@ export const initI18n = (defaultLocale?: string, value: I18nOverrides = {}) => {
 				order: ['querystring', 'localStorage', 'defaultLocale', 'navigator'],
 				caches: ['localStorage'],
 				lookupQuerystring: 'lang',
-				lookupLocalStorage: 'locale',
+				lookupLocalStorage: 'owui:locale',
 				convertDetectedLanguage: toBundleCode
 			},
 			fallbackLng: {

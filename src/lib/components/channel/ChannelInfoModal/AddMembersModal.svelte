@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
 	const i18n = getContext<any>('i18n');

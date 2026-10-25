@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { toast } from 'svelte-sonner';
 	import { models, settings, user, config } from '$lib/stores';
 	import { createEventDispatcher, onMount, getContext, tick } from 'svelte';

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import { Popover } from 'bits-ui';
 	import type { ChatParticipant } from '$lib/apis/folders';
@@ -40,7 +41,7 @@
 		class="{className} rounded-full shrink-0 object-cover"
 		onerror={(event) => {
 			const image = event.currentTarget as HTMLImageElement;
-			if (!image.src.endsWith('/static/favicon.png')) {
+			if (!image.src.endsWith(withBase('/static/favicon.png'))) {
 				image.src = `${WEBUI_BASE_URL}/static/favicon.png`;
 			}
 		}}

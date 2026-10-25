@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import dayjs from 'dayjs';
 	import { onDestroy, onMount, tick, getContext } from 'svelte';
 

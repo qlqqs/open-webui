@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
 

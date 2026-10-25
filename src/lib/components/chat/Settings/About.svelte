@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	// Keep keys in nested template expressions visible to i18next-parser.
 	// $i18n.t("licensed under");
 

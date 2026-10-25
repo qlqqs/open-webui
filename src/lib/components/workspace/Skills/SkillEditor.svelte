@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { v4 as uuidv4 } from 'uuid';
 	import { onMount, tick, getContext } from 'svelte';
 
@@ -20,7 +21,7 @@
 	import { slugify, parseFrontmatter, formatSkillName } from '$lib/utils';
 	import Spinner from '$lib/components/common/Spinner.svelte';
 	import { updateSkillAccessGrants } from '$lib/apis/skills';
-	import { goto, beforeNavigate } from '$app/navigation';
+	import { goto, beforeNavigate } from '$lib/embed/navigation';
 	import SkillFiles from './SkillFiles.svelte';
 	import VersionDiff from '../common/VersionDiff.svelte';
 	import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';

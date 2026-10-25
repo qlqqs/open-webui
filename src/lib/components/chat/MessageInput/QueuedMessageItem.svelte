@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withBase } from '$lib/embed/paths';
 	import { getContext } from 'svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Image from '$lib/components/common/Image.svelte';
@@ -49,7 +50,7 @@
 						<div
 							class="relative size-6 shrink-0 overflow-hidden rounded-lg border border-gray-100/60 bg-white/60 dark:border-white/[0.06] dark:bg-white/[0.025]"
 						>
-							<Image src={fileUrl} alt="" imageClassName="size-full object-cover" />
+							<Image src={withBase(fileUrl)} alt="" imageClassName="size-full object-cover" />
 							{#if file.status === 'uploading'}
 								<div
 									class="absolute inset-0 flex items-center justify-center bg-white/75 text-gray-500 backdrop-blur-[1px] dark:bg-gray-950/70 dark:text-gray-300"

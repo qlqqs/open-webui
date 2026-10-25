@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import { v4 as uuidv4 } from 'uuid';
 	import { onDestroy, getContext, tick, type Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -636,13 +638,13 @@
 		{:else if loading}<p class="p-3 text-xs">{$i18n.t('Loading...')}</p>
 		{:else if objectUrl}
 			{#if /\.(png|jpe?g|gif|webp|avif)$/i.test(selected)}<img
-					src={objectUrl}
+					src={withBase(objectUrl)}
 					alt={selected}
 					class="min-h-0 object-contain p-3"
 				/>
 			{:else if /\.pdf$/i.test(selected)}<iframe
 					title={selected}
-					src={objectUrl}
+					src={withBase(objectUrl)}
 					sandbox=""
 					class="min-h-0 flex-1"
 				></iframe>

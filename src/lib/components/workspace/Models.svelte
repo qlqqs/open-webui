@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { localStorage, sessionStorage } from '$lib/embed/storage';
+	import { withBase } from '$lib/embed/paths';
 	import WorkspaceAccessModal from './common/WorkspaceAccessModal.svelte';
 	let accessModal: WorkspaceAccessModal;
 	import dayjs from 'dayjs';
@@ -10,7 +12,7 @@
 	const { saveAs } = fileSaver;
 
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	const i18n = getContext<any>('i18n');
 	dayjs.extend(relativeTime);
 
@@ -792,7 +794,7 @@
 												// LICENSE covers this Open WebUI fallback logo.
 												// Do not alter, remove, obscure, or replace it except as LICENSE permits:
 												// https://docs.openwebui.com/license.
-												e.target.src = '/favicon.png';
+												e.target.src = withBase('/favicon.png');
 											}}
 										/>
 									</div>
@@ -809,7 +811,7 @@
 												>
 													{#if model.write_access}
 														<a
-															href={`/workspace/models/edit?id=${encodeURIComponent(model.id)}`}
+															href={withBase(`/workspace/models/edit?id=${encodeURIComponent(model.id)}`)}
 															class="focus-ring block truncate rounded text-[0.8125rem] leading-5 text-gray-800 group-hover:underline focus-visible:underline dark:text-gray-200"
 															>{localizedModelName}</a
 														>
@@ -826,7 +828,7 @@
 													tippyOptions={{ trigger: 'mouseenter focusin' }}
 												>
 													<a
-														href={`/?model=${encodeURIComponent(model.id)}`}
+														href={withBase(`/?model=${encodeURIComponent(model.id)}`)}
 														aria-label={`${$i18n.t('Try in chat')}: ${localizedModelName}`}
 														class="focus-ring flex h-5 w-4 items-center justify-center rounded text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200"
 														><ArrowRight className="size-3 -rotate-45" strokeWidth="2" /></a

@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
+	import { stripBase } from '$lib/embed/paths';
 	import { onMount, tick, getContext } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { page } from '$app/stores';
 
 	import dayjs from 'dayjs';
@@ -63,7 +65,7 @@
 			} else if (localStorage.token) {
 				await goto('/');
 			} else {
-				await goto(`/auth?redirect=${encodeURIComponent($page.url.pathname)}`);
+				await goto(`/auth?redirect=${encodeURIComponent(stripBase($page.url.pathname))}`);
 			}
 		})();
 	}

@@ -1,0 +1,202 @@
+/*
+ * sub2api embed: console look (QxAPI theme tokens from sub2api frontend/src/themes/qx/app/tokens.css).
+ * Everything is scoped to html.s2a-embed (set in embed mode only) so upstream mode is untouched.
+ * Only colours and a few chrome details change; the layout stays upstream's.
+ */
+
+html.s2a-embed {
+	--s2a-blue: #1d4eff;
+	--s2a-blue-hover: #1640d6;
+	--s2a-blue-soft: #edf2ff;
+	--s2a-ink: #0f172a;
+	--s2a-text: #475569;
+	--s2a-muted: #7a8699;
+	--s2a-line: #e5e8ee;
+	--s2a-page: #ffffff;
+	--s2a-tint: #f7f8fa;
+	--s2a-tint-strong: #eef1f6;
+	--s2a-surface: #ffffff;
+
+	--color-gray-50: #f7f8fa;
+	--color-gray-100: #eef1f6;
+	--color-gray-200: #e5e8ee;
+	--color-gray-300: #c3ccda;
+	--color-gray-400: #94a0b4;
+	--color-gray-500: #7a8699;
+	--color-gray-600: #475569;
+	--color-gray-700: #334155;
+	--color-gray-800: #1e293b;
+	--color-gray-850: #172033;
+	--color-gray-900: #0f172a;
+	--color-gray-950: #070b14;
+
+	--color-blue-50: #edf2ff;
+	--color-blue-100: #dce6ff;
+	--color-blue-400: #5a80ff;
+	--color-blue-500: #3462ff;
+	--color-blue-600: #1d4eff;
+	--color-blue-700: #1640d6;
+}
+
+html.s2a-embed.dark {
+	--s2a-blue: #4f7bff;
+	--s2a-blue-hover: #6b8fff;
+	--s2a-blue-soft: #16203d;
+	--s2a-ink: #e8ecf3;
+	--s2a-text: #a7b0c0;
+	--s2a-muted: #7d889b;
+	--s2a-line: #1f2633;
+	--s2a-page: #0b0f17;
+	--s2a-tint: #0f141e;
+	--s2a-tint-strong: #151c29;
+	--s2a-surface: #111723;
+
+	/* dark mode reads the low steps as text and the high steps as surfaces */
+	--color-gray-50: #f4f6fa;
+	--color-gray-100: #e8ecf3;
+	--color-gray-200: #cdd3de;
+	--color-gray-300: #a7b0c0;
+	--color-gray-400: #7d889b;
+	--color-gray-500: #5b6880;
+	--color-gray-600: #3b4760;
+	--color-gray-700: #2a3447;
+	--color-gray-800: #1f2633;
+	--color-gray-850: #111723;
+	--color-gray-900: #0b0f17;
+	--color-gray-950: #0b0f17;
+
+	--color-blue-400: #6b8fff;
+	--color-blue-500: #4f7bff;
+	--color-blue-600: #4f7bff;
+	--color-blue-700: #3462ff;
+}
+
+html.s2a-embed body,
+html.s2a-embed #splash-screen {
+	background: var(--s2a-page);
+	color: var(--s2a-ink);
+}
+
+/* ---- sidebar: flat like the console (page colour, 1px line, tint for hover / active) ---- */
+html.s2a-embed #sidebar {
+	background-color: var(--s2a-page) !important;
+}
+html.s2a-embed #sidebar,
+html.s2a-embed #sidebar > div,
+html.s2a-embed #sidebar-resizer {
+	border-color: var(--s2a-line) !important;
+}
+html.s2a-embed #sidebar .sidebar-bg-gradient-to-t {
+	background-image: linear-gradient(to top, var(--s2a-page) 50%, transparent) !important;
+}
+html.s2a-embed #sidebar .hover\:bg-gray-100:hover,
+html.s2a-embed #sidebar .group:hover .group-hover\:bg-gray-100 {
+	background-color: var(--s2a-tint-strong) !important;
+}
+html.s2a-embed #sidebar .bg-gray-100,
+html.s2a-embed #sidebar .selected {
+	background-color: var(--s2a-tint-strong) !important;
+}
+html.s2a-embed.dark #sidebar .dark\:hover\:bg-gray-900:hover,
+html.s2a-embed.dark #sidebar .group:hover .dark\:group-hover\:bg-gray-900,
+html.s2a-embed.dark #sidebar .dark\:bg-gray-900,
+html.s2a-embed.dark #sidebar .selected {
+	background-color: var(--s2a-tint-strong) !important;
+}
+
+/* ---- primary buttons: upstream inverts black / white; the console uses its blue ---- */
+html.s2a-embed button.bg-black.text-white:not(:disabled),
+html.s2a-embed.dark button.dark\:bg-white.dark\:text-black:not(:disabled),
+html.s2a-embed button.bg-gray-900.text-white:not(:disabled),
+html.s2a-embed.dark button.dark\:bg-gray-100.dark\:text-gray-800:not(:disabled) {
+	background-color: var(--s2a-blue) !important;
+	color: #fff !important;
+}
+html.s2a-embed button.bg-black.text-white:not(:disabled):hover,
+html.s2a-embed.dark button.dark\:bg-white.dark\:text-black:not(:disabled):hover,
+html.s2a-embed button.bg-gray-900.text-white:not(:disabled):hover,
+html.s2a-embed.dark button.dark\:bg-gray-100.dark\:text-gray-800:not(:disabled):hover {
+	background-color: var(--s2a-blue-hover) !important;
+}
+
+/* message input card: 1px line instead of a shadow */
+html.s2a-embed #message-input-container .shadow-lg,
+html.s2a-embed #message-input-container .shadow-md,
+html.s2a-embed #message-input-container .shadow {
+	box-shadow: none !important;
+}
+
+/* ---- branding hidden (S2A_HIDE_BRANDING=1, PRD R7.1) ---- */
+html.s2a-hide-branding #sidebar-webui-name,
+html.s2a-hide-branding a:has(> img.sidebar-new-chat-icon) {
+	display: none !important;
+}
+html.s2a-hide-branding img.sidebar-new-chat-icon {
+	display: none !important;
+}
+html.s2a-hide-branding img.sidebar-new-chat-icon + svg {
+	display: flex !important;
+}
+
+/* ---- embed-only components ---- */
+.s2a-link {
+	color: var(--s2a-blue, #1d4eff);
+}
+.s2a-link:hover {
+	text-decoration: underline;
+}
+.s2a-btn-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.25rem;
+	border-radius: 0.5rem;
+	padding: 0.375rem 0.75rem;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	background-color: var(--s2a-blue, #1d4eff);
+	color: #fff;
+}
+.s2a-btn-primary:hover:not(:disabled) {
+	background-color: var(--s2a-blue-hover, #1640d6);
+}
+.s2a-btn-primary:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+.s2a-btn-outline {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.25rem;
+	border-radius: 0.5rem;
+	padding: 0.3125rem 0.75rem;
+	font-size: 0.8125rem;
+	border: 1px solid var(--s2a-line, #e5e8ee);
+	color: var(--s2a-ink, #0f172a);
+	background: transparent;
+}
+.s2a-btn-outline:hover {
+	background: var(--s2a-tint, #f7f8fa);
+}
+.s2a-card {
+	border: 1px solid var(--s2a-line, #e5e8ee);
+	border-radius: 0.75rem;
+	background: var(--s2a-surface, #fff);
+}
+.s2a-select {
+	width: 100%;
+	border: 1px solid var(--s2a-line, #e5e8ee);
+	border-radius: 0.5rem;
+	padding: 0.4375rem 0.625rem;
+	font-size: 0.8125rem;
+	background: var(--s2a-page, #fff);
+	color: var(--s2a-ink, #0f172a);
+}
+.s2a-select:focus {
+	outline: 2px solid var(--s2a-blue, #1d4eff);
+	outline-offset: -1px;
+}
+.s2a-muted {
+	color: var(--s2a-muted, #7a8699);
+}

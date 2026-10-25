@@ -1,4 +1,5 @@
 <script>
+	import { localStorage } from '$lib/embed/storage';
 	import {
 		addTagById,
 		deleteTagById,

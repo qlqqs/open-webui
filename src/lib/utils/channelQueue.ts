@@ -1,3 +1,4 @@
+import { localStorage } from '$lib/embed/storage';
 import { get } from 'svelte/store';
 import { sendMessage } from '$lib/apis/channels';
 import { channelRequestQueues, user } from '$lib/stores';

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext } from 'svelte';
 	import { getUserPreview } from '$lib/apis/users';
 	import Modal from '$lib/components/common/Modal.svelte';

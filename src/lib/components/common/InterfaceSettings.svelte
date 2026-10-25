@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { canUseTemporaryChats, isSettingsAdmin } from '$lib/utils/settings-access';
 	import { config, settings, user } from '$lib/stores';
 	import { onMount, getContext } from 'svelte';

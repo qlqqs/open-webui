@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onDestroy, onMount } from 'svelte';
 
 	const i18n: any = getContext('i18n');

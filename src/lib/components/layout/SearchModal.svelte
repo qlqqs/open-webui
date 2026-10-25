@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import { getContext, onDestroy, tick } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto } from '$lib/embed/navigation';
 	import { toast } from 'svelte-sonner';
 	import { settings } from '$lib/stores';
 	import DropdownMenu from '$lib/components/common/DropdownMenu.svelte';

@@ -12,6 +12,7 @@
 </script>
 
 <script lang="ts">
+	import { localStorage } from '$lib/embed/storage';
 	import type { TerminalContext } from '$lib/types';
 	import { filesystemFile, type FilesystemFile } from '$lib/apis/terminal';
 	import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom';
