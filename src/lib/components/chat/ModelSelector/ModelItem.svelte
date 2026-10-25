@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { modelPrices } from '$lib/embed/keys'; // sub2api-embed
 	import { et } from '$lib/embed/i18n'; // sub2api-embed
+	import { embedMode } from '$lib/embed/mode'; // sub2api-embed
 	import { withBase } from '$lib/embed/paths';
 	import { marked } from 'marked';
 
@@ -126,7 +127,8 @@
 			</div>
 
 			<div class="flex min-w-0 items-center">
-				<Tooltip content={`${item.label} (${item.value})`} placement="top-start">
+				<!-- sub2api-embed: no "name (id)" hover card; the row already shows the name -->
+				<Tooltip content={$embedMode ? '' : `${item.label} (${item.value})`} placement="top-start">
 					<div class="line-clamp-1">
 						{item.label}
 					</div>
@@ -283,7 +285,8 @@
 							</svg>
 						</div>
 					</Tooltip>
-				{:else if item.model.connection_type === 'external'}
+				{:else if item.model.connection_type === 'external' && !$embedMode}
+					<!-- sub2api-embed: every embed model comes through the gateway connection; skip the badge -->
 					<Tooltip content={`${$i18n.t('External')}`}>
 						<div class="translate-y-[1px]">
 							<svg

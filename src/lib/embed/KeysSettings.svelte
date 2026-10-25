@@ -9,6 +9,7 @@
 	import { et } from './i18n';
 	import type { EmbedStringKey } from './i18n';
 	import { navigateConsole } from './bridge';
+	import KeyPicker, { type KeyPickerOption } from './KeyPicker.svelte';
 	import {
 		chatKeyOptions,
 		createKey,
@@ -42,14 +43,38 @@
 	$: hasUsableChatKey = chatOptions.some((o) => !o.reason);
 	$: selectedChat = keys.find((k) => k.id === selection.key_id) ?? null;
 
-	const KNOWN_REASONS = new Set(['disabled', 'expired', 'quota_exhausted', 'group_unavailable', 'no_chat']);
+	const KNOWN_REASONS = new Set([
+		'disabled',
+		'expired',
+		'quota_exhausted',
+		'group_unavailable',
+		'no_chat'
+	]);
 	const reasonText = (reason: string) =>
-		$et((KNOWN_REASONS.has(reason) ? `keys.reason.${reason}` : 'keys.reason.unknown') as EmbedStringKey);
+		$et(
+			(KNOWN_REASONS.has(reason)
+				? `keys.reason.${reason}`
+				: 'keys.reason.unknown') as EmbedStringKey
+		);
 
-	const optionLabel = (key: Sub2apiKey, reason: string) =>
-		`${key.name}${key.group ? ` · ${key.group.name}` : ''}${key.masked ? ` (${key.masked})` : ''}${
-			reason ? ` — ${reasonText(reason)}` : ''
-		}`;
+	// Unusable keys stay listed (greyed out, with the reason) unless they are the current choice.
+	const pickerOptions = (
+		options: { key: Sub2apiKey; reason: string }[],
+		current: number | null
+	): KeyPickerOption[] =>
+		options.map(({ key, reason }) => ({
+			value: key.id,
+			title: key.name,
+			subtitle: [key.group?.name ?? $et('keys.noGroup'), key.masked].filter(Boolean).join(' · '),
+			reason: reason ? reasonText(reason) : undefined,
+			disabled: !!reason && key.id !== current
+		}));
+	$: chatPickerOptions = pickerOptions(chatOptions, selection.key_id);
+	$: imagePickerOptions = pickerOptions(imageOptions, selection.image_key_id);
+	$: groupPickerOptions = groups.map((g) => ({
+		value: g.id,
+		title: $et('keys.createIn', { group: g.name })
+	}));
 
 	const formatDate = (iso: string) => {
 		const d = new Date(iso);
@@ -74,14 +99,9 @@
 		}
 	};
 
-	const onChatChange = (e: Event) => {
-		const v = Number((e.currentTarget as HTMLSelectElement).value);
-		save({ key_id: v > 0 ? v : null, image_key_id: selection.image_key_id });
-	};
-	const onImageChange = (e: Event) => {
-		const v = Number((e.currentTarget as HTMLSelectElement).value);
-		save({ key_id: selection.key_id, image_key_id: v > 0 ? v : null });
-	};
+	const onChatChange = (v: number | null) =>
+		save({ key_id: v, image_key_id: selection.image_key_id });
+	const onImageChange = (v: number | null) => save({ key_id: selection.key_id, image_key_id: v });
 
 	const create = async () => {
 		if (!groupId) return;
@@ -129,11 +149,15 @@
 					<div class="text-[0.8125rem] mb-2">{$et('keys.empty')}</div>
 					{#if groups.length > 0}
 						<div class="flex flex-wrap items-center gap-2">
-							<select class="s2a-select !w-auto max-w-full" bind:value={groupId} aria-label="group">
-								{#each groups as group (group.id)}
-									<option value={group.id}>{$et('keys.createIn', { group: group.name })}</option>
-								{/each}
-							</select>
+							<div class="min-w-[14rem] max-w-full">
+								<KeyPicker
+									id="s2a-create-group"
+									value={groupId}
+									options={groupPickerOptions}
+									placeholder={$et('keys.placeholder')}
+									onChange={(v) => (groupId = v)}
+								/>
+							</div>
 							<button class="s2a-btn-primary" disabled={creating || !groupId} on:click={create}>
 								{creating ? $et('keys.creating') : $et('keys.create')}
 							</button>
@@ -146,20 +170,14 @@
 				<label class="block text-[0.8125rem] font-medium mb-1.5" for="s2a-chat-key"
 					>{$et('keys.chat')}</label
 				>
-				<select
+				<KeyPicker
 					id="s2a-chat-key"
-					class="s2a-select"
-					value={selection.key_id ?? 0}
+					value={selection.key_id}
+					options={chatPickerOptions}
+					placeholder={$et('keys.placeholder')}
 					disabled={saving}
-					on:change={onChatChange}
-				>
-					<option value={0} disabled>{$et('keys.placeholder')}</option>
-					{#each chatOptions as option (option.key.id)}
-						<option value={option.key.id} disabled={!!option.reason && option.key.id !== selection.key_id}
-							>{optionLabel(option.key, option.reason)}</option
-						>
-					{/each}
-				</select>
+					onChange={onChatChange}
+				/>
 				<div class="text-xs s2a-muted mt-1.5">{$et('keys.chatHint')}</div>
 				{#if resolved.chatKeyProblem}
 					<div class="text-xs text-amber-600 dark:text-amber-400 mt-1">
@@ -192,22 +210,15 @@
 				<label class="block text-[0.8125rem] font-medium mb-1.5" for="s2a-image-key"
 					>{$et('keys.image')}</label
 				>
-				<select
+				<KeyPicker
 					id="s2a-image-key"
-					class="s2a-select"
-					value={selection.image_key_id ?? 0}
+					value={selection.image_key_id}
+					options={imagePickerOptions}
+					placeholder={$et('keys.placeholder')}
+					noneLabel={$et('keys.imageNone')}
 					disabled={saving}
-					on:change={onImageChange}
-				>
-					<option value={0}>{$et('keys.imageNone')}</option>
-					{#each imageOptions as option (option.key.id)}
-						<option
-							value={option.key.id}
-							disabled={!!option.reason && option.key.id !== selection.image_key_id}
-							>{optionLabel(option.key, option.reason)}</option
-						>
-					{/each}
-				</select>
+					onChange={onImageChange}
+				/>
 				<div class="text-xs s2a-muted mt-1.5">{$et('keys.imageHint')}</div>
 				<div class="text-xs mt-1" data-testid="s2a-image-status">
 					{#if resolved.imageKey}

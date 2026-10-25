@@ -933,8 +933,10 @@
 			style="position: fixed; z-index: 9999; top: 0; left: 0; width: max-content;"
 		>
 			<div
-				class="z-40 {className ??
-					'w-[20rem]'} max-w-[calc(100vw-1rem)] justify-start rounded-xl border border-gray-100 bg-white p-0.5 shadow-lg outline-hidden dark:border-gray-800 dark:bg-gray-850 dark:text-white flex flex-col overflow-hidden"
+				class="z-40 {$embedMode
+					? 'w-[16rem]'
+					: (className ??
+						'w-[20rem]')} max-w-[calc(100vw-1rem)] justify-start rounded-xl border border-gray-100 bg-white p-0.5 shadow-lg outline-hidden dark:border-gray-800 dark:bg-gray-850 dark:text-white flex flex-col overflow-hidden"
 				transition:flyAndScale
 			>
 				<slot>
