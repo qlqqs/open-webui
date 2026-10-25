@@ -21,3 +21,20 @@ backend/data/*
 
 .venv
 .git
+
+# sub2api-embed: only source inputs; never import a local build, DB or secret.
+/build
+**/node_modules
+**/.svelte-kit
+**/venv
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+**/.webui_secret_key
+**/.env
+**/.env.*
+/backend/data
+/coverage
+/test-results
+/playwright-report
