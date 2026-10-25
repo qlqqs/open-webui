@@ -1,5 +1,6 @@
 <script lang="ts">
 	// sub2api-embed
+	import { canvasImageFile, imageDataURLToFile, readImageDataURL } from '$lib/embed/image-upload';
 	import { embedHides } from '$lib/embed/features';
 	import { embedMode } from '$lib/embed/mode';
 	import { resolvedKeys } from '$lib/embed/keys';
@@ -961,16 +962,15 @@
 			// bring back focus to this current tab, so that the user can see the screen capture
 			window.focus();
 
-			// Convert the canvas to a Base64 image URL
-			const imageUrl = canvas.toDataURL('image/png');
-			const blob = await (await fetch(imageUrl)).blob();
-			const file = new File([blob], `screen-capture-${Date.now()}.png`, { type: 'image/png' });
+			// sub2api-embed: encode locally without a CSP-blocked fetch(data:).
+			const file = await canvasImageFile(canvas, `screen-capture-${Date.now()}.png`);
 			inputFilesHandler([file]);
 			// Clean memory: Clear video srcObject
 			video.srcObject = null;
 		} catch (error) {
 			// Handle any errors (e.g., user cancels screen sharing)
 			console.error('Error capturing screen:', error);
+			toast.error($i18n.t('Failed to upload file.'));
 		}
 	};
 
@@ -1254,32 +1254,20 @@
 					toast.error($et('upload.heic'));
 					return;
 				}
-				const imageFile = isHeicImage(file) ? await convertHeicToJpeg(file) : file;
-				let reader = new FileReader();
-
-				reader.onload = async (event) => {
-					let imageUrl = event.target.result;
-
-					// Compress the image if settings or config require it
-					imageUrl = await compressImageHandler(imageUrl, $settings, $config);
+				// sub2api-embed: keep conversion local and report read/compression failures.
+				try {
+					const imageFile = isHeicImage(file) ? await convertHeicToJpeg(file) : file;
+					const originalURL = await readImageDataURL(imageFile);
+					const imageUrl = await compressImageHandler(originalURL, $settings, $config);
 
 					if ($temporaryChatEnabled) {
-						files = [
-							...files,
-							{
-								type: 'image',
-								url: imageUrl
-							}
-						];
+						files = [...files, { type: 'image', url: imageUrl }];
 					} else {
-						const blob = await (await fetch(imageUrl)).blob();
-						const compressedFile = new File([blob], imageFile.name, { type: imageFile.type });
-
-						uploadFileHandler(compressedFile, false);
+						await uploadFileHandler(imageDataURLToFile(imageUrl, imageFile, originalURL), false);
 					}
-				};
-
-				reader.readAsDataURL(imageFile);
+				} catch {
+					toast.error($i18n.t('Failed to upload file.'));
+				}
 			} else {
 				uploadFileHandler(file);
 			}

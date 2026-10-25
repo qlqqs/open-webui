@@ -60,7 +60,7 @@ sub2api 先读取候选 ID、校验归属及可用性，然后删除客户端全
 - 管理员没有读取/修改他人聊天、文件、笔记、日历的角色旁路；显式共享仍遵循原版 ACL。
 
 反代保留查询串；根相对（单 `/`）`Location` 补 `/_chat`（避免重复前缀）；`Set-Cookie: Path=/` 改为 `Path=/_chat` 兜底。
-上传 `/_chat/api/v1/files/` 请求体最多 **25 MiB**（含 multipart 开销），其他请求 **5 MiB**，超限 413。后端文件大小默认 25 MiB 不替代反代的请求体上限。
+上传 `/_chat/api/v1/files/` 请求体最多 **26 MiB**（25 MiB 文件 + 1 MiB multipart 余量），其他请求 **5 MiB**，超限 413。后端仍单独校验文件默认最多 **25 MiB**，不得把反代请求上限当作文件上限。已知及未知 Content-Length 均执行相同请求体限制。
 
 ## 3. `__sub2api` 接口
 
@@ -130,6 +130,8 @@ sub2api 删除上游 CSP / X-Frame-Options，再设置 `X-Frame-Options: SAMEORI
 ```text
 default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob: data:; worker-src 'self' blob:; frame-src 'self' blob: data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'
 ```
+
+图片上传转换（`src/lib/embed/image-upload.ts`）不得用 `fetch(data:)`：未压缩图片复用原 `File`；压缩后的 base64 图片在本地解码为 `File`，MIME 取编码结果；截图用 `canvas.toBlob()`。`FileReader` 失败/中止及转换失败须捕获并显示上传失败提示，不通过开放 `connect-src data:` 绕过。图片压缩仍按用户/服务端尺寸设置，临时聊天仍使用内联图片，不持久化上传。
 
 构建后必须运行 `scripts/embed-postbuild.mjs`：把 index 的内联脚本外置到 `_app/immutable/inline/`，剩余内联脚本/事件属性会使构建失败；不要跳过此步。删除全部 sourcemap。
 
