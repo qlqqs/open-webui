@@ -1,3 +1,4 @@
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
 import asyncio
 import errno
 import hashlib
@@ -288,6 +289,13 @@ async def upload_file(
     user=Depends(get_verified_user),
     db: AsyncSession = Depends(get_async_session),
 ):
+    # sub2api-embed: enforce the UI permission at the external upload boundary.
+    from open_webui.embed.settings import settings as embed_settings
+    from open_webui.utils.access_control import has_permission
+    if embed_settings.enabled and user.role != 'admin' and not await has_permission(
+        user.id, 'chat.file_upload', await Config.get('user.permissions')
+    ):
+        raise HTTPException(403, '不允许上传附件')
     result = await upload_file_handler(
         request,
         file=file,
@@ -342,6 +350,10 @@ async def upload_file_handler(
                 detail=ERROR_MESSAGES.DEFAULT('Invalid metadata format'),
             )
     file_metadata = metadata if metadata else {}
+    # sub2api-embed: upload metadata cannot bypass the disabled knowledge API.
+    from open_webui.embed.settings import settings as embed_settings
+    if embed_settings.enabled and file_metadata.get('knowledge_id'):
+        raise HTTPException(403, '知识库不可用')
 
     try:
         unsanitized_filename = file.filename
@@ -352,7 +364,12 @@ async def upload_file_handler(
         file_extension = file_extension[1:].lower() if file_extension else ''
 
         allowed_file_extensions = await Config.get('rag.file.allowed_extensions')
-        if process and allowed_file_extensions:
+        # sub2api-embed: process=false is not an extension-check bypass (images excepted).
+        from open_webui.embed.settings import settings as embed_settings
+        check_extension = process
+        if embed_settings.enabled:
+            check_extension = not (file.content_type or '').startswith('image/')
+        if check_extension and allowed_file_extensions:
             allowed_file_extensions = [ext for ext in allowed_file_extensions if ext]
 
             if file_extension not in allowed_file_extensions:
@@ -494,7 +511,7 @@ async def list_files(
     db: AsyncSession = Depends(get_async_session),
 ):
     skip = (page - 1) * PAGE_SIZE
-    user_id = None if (user.role == 'admin' and BYPASS_ADMIN_ACCESS_CONTROL) else user.id
+    user_id = None if (resource_admin(user) and BYPASS_ADMIN_ACCESS_CONTROL) else user.id  # sub2api-embed: no admin bypass for user resources.
 
     result = await Files.get_file_list(user_id=user_id, skip=skip, limit=PAGE_SIZE, db=db)
 
@@ -528,7 +545,7 @@ async def search_files(
     Uses SQL-based filtering with pagination for better performance.
     """
     # Determine user_id: null for admin with bypass (search all), user.id otherwise
-    user_id = None if (user.role == 'admin' and BYPASS_ADMIN_ACCESS_CONTROL) else user.id
+    user_id = None if (resource_admin(user) and BYPASS_ADMIN_ACCESS_CONTROL) else user.id  # sub2api-embed: no admin bypass for user resources.
 
     # Use optimized database query with pagination
     files = await Files.search_files(
@@ -563,7 +580,7 @@ async def count_files(
     user=Depends(get_verified_user),
     db: AsyncSession = Depends(get_async_session),
 ):
-    user_id = None if (user.role == 'admin' and BYPASS_ADMIN_ACCESS_CONTROL) else user.id
+    user_id = None if (resource_admin(user) and BYPASS_ADMIN_ACCESS_CONTROL) else user.id  # sub2api-embed: no admin bypass for user resources.
     return await Files.count_files_by_user_id(user_id=user_id, db=db)
 
 
@@ -612,7 +629,7 @@ async def get_file_by_id(id: str, user=Depends(get_verified_user), db: AsyncSess
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-    if file.user_id == user.id or user.role == 'admin' or await has_access_to_file(id, 'read', user, db=db):
+    if file.user_id == user.id or resource_admin(user) or await has_access_to_file(id, 'read', user, db=db):  # sub2api-embed: no admin bypass for user resources.
         return file
     else:
         raise HTTPException(
@@ -639,7 +656,7 @@ async def get_file_process_status(
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-    if file.user_id == user.id or user.role == 'admin' or await has_access_to_file(id, 'read', user):
+    if file.user_id == user.id or resource_admin(user) or await has_access_to_file(id, 'read', user):  # sub2api-embed: no admin bypass for user resources.
         if stream:
             MAX_FILE_PROCESSING_DURATION = 3600 * 2
 
@@ -697,7 +714,7 @@ async def get_file_data_content_by_id(
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-    if file.user_id == user.id or user.role == 'admin' or await has_access_to_file(id, 'read', user, db=db):
+    if file.user_id == user.id or resource_admin(user) or await has_access_to_file(id, 'read', user, db=db):  # sub2api-embed: no admin bypass for user resources.
         return {'content': file.data.get('content', '')}
     else:
         raise HTTPException(
@@ -731,7 +748,7 @@ async def update_file_data_content_by_id(
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-    if file.user_id == user.id or user.role == 'admin' or await has_access_to_file(id, 'write', user, db=db):
+    if file.user_id == user.id or resource_admin(user) or await has_access_to_file(id, 'write', user, db=db):  # sub2api-embed: no admin bypass for user resources.
         max_size = await Config.get('rag.file.max_size')
         if max_size and len(form_data.content.encode('utf-8')) > int(max_size) * 1024 * 1024:
             raise HTTPException(
@@ -756,7 +773,9 @@ async def update_file_data_content_by_id(
         # Propagate content change to all knowledge collections referencing
         # this file.  Without this the old embeddings remain in the knowledge
         # collection and RAG returns both stale and current data (#20558).
-        knowledges = await Knowledges.get_knowledges_by_file_id(id, db=db)
+        # sub2api-embed: full-text attachments never maintain vector collections.
+        from open_webui.embed.settings import settings as embed_settings
+        knowledges = [] if embed_settings.enabled else await Knowledges.get_knowledges_by_file_id(id, db=db)
         failed_collections = []
         for knowledge in knowledges:
             try:
@@ -817,7 +836,7 @@ async def get_file_content_by_id(
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-    if file.user_id == user.id or user.role == 'admin' or await has_access_to_file(id, 'read', user, db=db):
+    if file.user_id == user.id or resource_admin(user) or await has_access_to_file(id, 'read', user, db=db):  # sub2api-embed: no admin bypass for user resources.
         try:
             if not file.path:
                 raise HTTPException(status_code=404, detail='Original file is unavailable.')
@@ -886,7 +905,7 @@ async def get_html_file_content_by_id(
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-    if file.user_id == user.id or user.role == 'admin' or await has_access_to_file(id, 'read', user, db=db):
+    if file.user_id == user.id or resource_admin(user) or await has_access_to_file(id, 'read', user, db=db):  # sub2api-embed: no admin bypass for user resources.
         try:
             file_path = await asyncio.to_thread(Storage.get_file, file.path)
             file_path = Path(file_path)
@@ -928,7 +947,7 @@ async def get_file_content_by_id(
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-    if file.user_id == user.id or user.role == 'admin' or await has_access_to_file(id, 'read', user, db=db):
+    if file.user_id == user.id or resource_admin(user) or await has_access_to_file(id, 'read', user, db=db):  # sub2api-embed: no admin bypass for user resources.
         file_path = file.path
 
         # Handle Unicode filenames
@@ -992,7 +1011,7 @@ async def rename_file_by_id(
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-    if file.user_id == user.id or user.role == 'admin' or await has_access_to_file(id, 'write', user, db=db):
+    if file.user_id == user.id or resource_admin(user) or await has_access_to_file(id, 'write', user, db=db):  # sub2api-embed: no admin bypass for user resources.
         result = await Files.update_file_name_by_id(id, form_data.filename, db=db)
         if result:
             await publish_event(
@@ -1032,9 +1051,11 @@ async def delete_file_by_id(
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-    if file.user_id == user.id or user.role == 'admin' or await has_access_to_file(id, 'write', user, db=db):
+    if file.user_id == user.id or resource_admin(user) or await has_access_to_file(id, 'write', user, db=db):  # sub2api-embed: no admin bypass for user resources.
         # Clean up KB associations and embeddings before deleting
-        knowledges = await Knowledges.get_knowledges_by_file_id(id, db=db)
+        # sub2api-embed: full-text attachments never maintain vector collections.
+        from open_webui.embed.settings import settings as embed_settings
+        knowledges = [] if embed_settings.enabled else await Knowledges.get_knowledges_by_file_id(id, db=db)
         for knowledge in knowledges:
             # Remove KB-file relationship
             await Knowledges.remove_file_from_knowledge_by_id(knowledge.id, id, db=db)
@@ -1050,7 +1071,9 @@ async def delete_file_by_id(
         if result:
             try:
                 await asyncio.to_thread(Storage.delete_file, file.path)
-                await ASYNC_VECTOR_DB_CLIENT.delete(collection_name=f'file-{id}')
+                # sub2api-embed: deletion must work without a vector database.
+                if not embed_settings.enabled:
+                    await ASYNC_VECTOR_DB_CLIENT.delete(collection_name=f'file-{id}')
             except Exception as e:
                 log.exception(e)
                 log.error('Error deleting files')

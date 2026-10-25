@@ -13,12 +13,19 @@ set -euo pipefail
 # `${VAR,,}` form stays safe under `set -u` everywhere else.
 : "${USE_SLIM_DOCKER:=}" "${WEB_LOADER_ENGINE:=}" "${USE_OLLAMA_DOCKER:=}" "${USE_CUDA_DOCKER:=}"
 
+# sub2api-embed: disable optional installers/services before Python configuration loads.
+EMBED_MODE="${S2A_EMBED_MODE:-0}"
+S2A_ENABLED=false
+if [[ "${EMBED_MODE,,}" =~ ^(1|true|yes|on)$ ]]; then
+  S2A_ENABLED=true
+fi
+
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 cd "$SCRIPT_DIR" || exit 1
 
 # ── Playwright browser installation (if configured) ──────────────────────────
 
-if [[ "${USE_SLIM_DOCKER,,}" != "true" && "${WEB_LOADER_ENGINE,,}" == "playwright" ]]; then
+if [[ "$S2A_ENABLED" != true && "${USE_SLIM_DOCKER,,}" != "true" && "${WEB_LOADER_ENGINE,,}" == "playwright" ]]; then
   if [[ -z "${PLAYWRIGHT_WS_URL:-}" ]]; then
     echo "Installing Playwright Chromium browser..."
     playwright install chromium
@@ -51,7 +58,7 @@ fi
 
 # ── Ollama (bundled Docker image) ────────────────────────────────────────────
 
-if [[ "${USE_OLLAMA_DOCKER,,}" == "true" ]]; then
+if [[ "$S2A_ENABLED" != true && "${USE_OLLAMA_DOCKER,,}" == "true" ]]; then
   echo "Starting bundled ollama serve..."
   ollama serve &
 fi
@@ -65,7 +72,7 @@ fi
 
 # ── HuggingFace Space deployment ─────────────────────────────────────────────
 
-if [[ -n "${SPACE_ID:-}" ]]; then
+if [[ "$S2A_ENABLED" != true && -n "${SPACE_ID:-}" ]]; then
   echo "Configuring for HuggingFace Space deployment..."
 
   if [[ -n "${ADMIN_USER_EMAIL:-}" && -n "${ADMIN_USER_PASSWORD:-}" ]]; then
@@ -104,9 +111,22 @@ else
   ARGS=(--workers "$UVICORN_WORKERS" --ws-per-message-deflate "${UVICORN_WS_PER_MESSAGE_DEFLATE:-true}")
 fi
 
+# sub2api-embed: trust TCP peer, never uvicorn-rewritten XFF; no root-path.
+PROXY_ARGS=(--forwarded-allow-ips "${FORWARDED_ALLOW_IPS:-*}")
+if [[ "$S2A_ENABLED" == true ]]; then
+  PROXY_ARGS=()
+  for arg in "${ARGS[@]}"; do
+    if [[ "$arg" == --root-path* ]]; then
+      echo "sub2api-embed does not support --root-path" >&2
+      exit 64
+    fi
+  done
+  ARGS+=(--no-proxy-headers)
+fi
+
 exec env WEBUI_SECRET_KEY="${WEBUI_SECRET_KEY:-}" \
   "$PYTHON_CMD" -m uvicorn open_webui.main:app \
     --host "$HOST" \
     --port "$PORT" \
-    --forwarded-allow-ips "${FORWARDED_ALLOW_IPS:-*}" \
+    "${PROXY_ARGS[@]}" \
     "${ARGS[@]}"

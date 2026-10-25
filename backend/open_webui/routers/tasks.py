@@ -144,6 +144,11 @@ async def update_task_config(request: Request, form_data: TaskConfigForm, user=D
 
 @router.post('/title/completions')
 async def generate_title(request: Request, form_data: dict, user=Depends(get_verified_user)):
+    # sub2api-embed: preserve contract D's missing-Key error outside upstream's catch-all.
+    from open_webui.embed.settings import settings as embed_settings
+    if embed_settings.enabled:
+        from open_webui.embed.gateway import current_key
+        current_key()
     if not await Config.get('task.title.enable'):
         return JSONResponse(
             status_code=status.HTTP_200_OK,

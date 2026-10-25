@@ -1,3 +1,4 @@
+from open_webui.embed.settings import settings as embed_settings  # sub2api-embed: model views
 import asyncio
 import copy
 import logging
@@ -77,6 +78,9 @@ async def fetch_openai_models(request: Request, user: UserModel = None):
 
 
 async def get_all_base_models(request: Request, user: UserModel = None):
+    # sub2api-embed: no Ollama, pipe providers, or persisted connection lists.
+    if embed_settings.enabled:
+        return await fetch_openai_models(request, user)
     config = await Config.get_many('openai.enable', 'ollama.enable')
     openai_task = fetch_openai_models(request, user) if config.get('openai.enable') else asyncio.sleep(0, result=[])
     ollama_task = fetch_ollama_models(request, user) if config.get('ollama.enable') else asyncio.sleep(0, result=[])
@@ -94,7 +98,7 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
         'evaluation.arena.models',
         'models.default_metadata',
     )
-    if refresh:
+    if refresh and not embed_settings.enabled:  # sub2api-embed: refresh only the selected Key.
         await openai.get_all_models.cache.clear()
         await ollama.get_all_models.cache.clear()
         redis = getattr(request.app.state, 'redis', None)
@@ -103,7 +107,8 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
         request.app.state.BASE_MODELS = []
 
     redis = getattr(request.app.state, 'redis', None)
-    use_cache = config.get('models.base_models_cache') and not refresh
+    # sub2api-embed: global state is metadata, never a cached user view.
+    use_cache = not embed_settings.enabled and config.get('models.base_models_cache') and not refresh
     base_models = None
 
     if use_cache and redis is not None:
@@ -118,8 +123,15 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
         base_models = request.app.state.BASE_MODELS
 
     if base_models is None:
-        base_models = await get_all_base_models(request, user=user)
-        if base_models:
+        # sub2api-embed: propagate refresh into the per-Key cache, not upstream global caches.
+        if embed_settings.enabled:
+            from open_webui.embed.models import gateway_models
+            base_models = (await gateway_models(request, refresh=refresh))['data']
+        else:
+            base_models = await get_all_base_models(request, user=user)
+        if embed_settings.enabled:
+            pass  # sub2api-embed: empty Key-specific lists must stay empty.
+        elif base_models:
             request.app.state.BASE_MODELS = base_models
             if config.get('models.base_models_cache') and redis is not None:
                 await redis.set(BASE_MODELS_CACHE_KEY, JSONCodec.dumps(base_models))
@@ -238,6 +250,9 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
                     models = [m for m in models if m is not model]
 
         elif custom_model.is_active:
+            # sub2api-embed: assistants require an available base model for this Key.
+            if embed_settings.enabled and custom_model.base_model_id not in base_model_lookup:
+                continue
             if custom_model.id in existing_ids:
                 continue
 
@@ -478,7 +493,10 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
             model['ollama'] = model['ollama'].copy()
             model['ollama'].pop('expires_at', None)
         models_dict[model['id']] = model
-    if isinstance(request.app.state.MODELS, RedisDict):
+    # sub2api-embed: merge deep copies into the model metadata union.
+    if embed_settings.enabled:
+        request.app.state.MODELS.update(copy.deepcopy(models_dict))
+    elif isinstance(request.app.state.MODELS, RedisDict):
         try:
             request.app.state.MODELS.set(models_dict)
         except Exception as e:
@@ -491,6 +509,11 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
 
 
 async def check_model_access(user, model, model_info=None, db=None):
+    # sub2api-embed: gateway base models are authorized by the current Key, presets keep ACLs.
+    if embed_settings.enabled and not model.get('preset'):
+        model_info = model_info or await Models.get_model_by_id(model.get('id'), db=db)
+        if model_info is None:
+            return
     if model.get('arena'):
         meta = model.get('info', {}).get('meta', {})
         access_grants = meta.get('access_grants', [])
@@ -603,7 +626,8 @@ async def get_filtered_models(models, user, db=None):
                     or model['id'] in accessible_model_ids
                 ):
                     filtered_models.append(model)
-            elif user.role == 'admin':
+            # sub2api-embed: unregistered gateway models are already Key-filtered.
+            elif user.role == 'admin' or embed_settings.enabled:
                 # No DB entry means no access control configured yet;
                 # only admins can see unconfigured models.
                 filtered_models.append(model)

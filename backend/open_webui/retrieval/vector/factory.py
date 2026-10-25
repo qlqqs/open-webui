@@ -1,4 +1,5 @@
 from threading import Lock
+from open_webui.embed.settings import settings as embed_settings  # sub2api-embed: no vector storage
 
 from fastapi import HTTPException
 from open_webui.config import (
@@ -97,12 +98,16 @@ class Vector:
                 raise ValueError(f'Unsupported vector type: {vector_type}')
 
 
-VECTOR_DB_CLIENT = None if USE_SLIM else Vector.get_vector(VECTOR_DB)
+# sub2api-embed: never initialize local or remote vector storage in embedded full-text mode.
+VECTOR_DB_CLIENT = None if USE_SLIM or embed_settings.enabled else Vector.get_vector(VECTOR_DB)
 _vector_client_lock = Lock()
 
 
 def get_vector_db_client() -> VectorDBBase:
     """Initialize slim's remote client on first use so chat can start without it."""
+    # sub2api-embed: defense in depth for internal callers and reused databases.
+    if embed_settings.enabled:
+        raise HTTPException(403, '向量检索不可用')
     global VECTOR_DB_CLIENT
     if VECTOR_DB_CLIENT is not None:
         return VECTOR_DB_CLIENT

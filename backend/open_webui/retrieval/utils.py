@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
+from open_webui.embed.settings import settings as embed_settings  # sub2api-embed: embedding gateway
+
 import asyncio
 import hashlib
 import logging
@@ -896,6 +899,11 @@ def generate_openai_batch_embeddings(
     prefix: str = None,
     user: UserModel = None,
 ) -> list[list[float]]:
+    # sub2api-embed: resolve the context at call time, never a startup closure's key.
+    if embed_settings.enabled:
+        from open_webui.embed.embeddings import sync_embeddings
+        return sync_embeddings(model, texts)
+
     log.debug('generate_openai_batch_embeddings:model %s batch size: %s', model, len(texts))
     json_data = {'input': texts, 'model': model}
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
@@ -926,6 +934,11 @@ async def agenerate_openai_batch_embeddings(
     prefix: str = None,
     user: UserModel = None,
 ) -> list[list[float]]:
+    # sub2api-embed: resolve the context at call time, never a startup closure's key.
+    if embed_settings.enabled:
+        from open_webui.embed.embeddings import async_embeddings
+        return await async_embeddings(model, texts)
+
     log.debug('agenerate_openai_batch_embeddings:model %s batch size: %s', model, len(texts))
     form_data = {'input': texts, 'model': model}
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
@@ -961,6 +974,11 @@ def generate_azure_openai_batch_embeddings(
     prefix: str = None,
     user: UserModel = None,
 ) -> list[list[float]]:
+    # sub2api-embed: resolve the context at call time, never a startup closure's key.
+    if embed_settings.enabled:
+        from open_webui.embed.embeddings import sync_embeddings
+        return sync_embeddings(model, texts)
+
     log.debug('generate_azure_openai_batch_embeddings:deployment %s batch size: %s', model, len(texts))
     json_data = {'input': texts}
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
@@ -1003,6 +1021,11 @@ async def agenerate_azure_openai_batch_embeddings(
     prefix: str = None,
     user: UserModel = None,
 ) -> list[list[float]]:
+    # sub2api-embed: resolve the context at call time, never a startup closure's key.
+    if embed_settings.enabled:
+        from open_webui.embed.embeddings import async_embeddings
+        return await async_embeddings(model, texts)
+
     log.debug('agenerate_azure_openai_batch_embeddings:deployment %s batch size: %s', model, len(texts))
     form_data = {'input': texts}
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
@@ -1042,6 +1065,11 @@ def generate_ollama_batch_embeddings(
     prefix: str = None,
     user: UserModel = None,
 ) -> list[list[float]]:
+    # sub2api-embed: resolve the context at call time, never a startup closure's key.
+    if embed_settings.enabled:
+        from open_webui.embed.embeddings import sync_embeddings
+        return sync_embeddings(model, texts)
+
     log.debug('generate_ollama_batch_embeddings:model %s batch size: %s', model, len(texts))
     json_data = {'input': texts, 'model': model, 'truncate': True}
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
@@ -1075,6 +1103,11 @@ async def agenerate_ollama_batch_embeddings(
     prefix: str = None,
     user: UserModel = None,
 ) -> list[list[float]]:
+    # sub2api-embed: resolve the context at call time, never a startup closure's key.
+    if embed_settings.enabled:
+        from open_webui.embed.embeddings import async_embeddings
+        return await async_embeddings(model, texts)
+
     log.debug('agenerate_ollama_batch_embeddings:model %s batch size: %s', model, len(texts))
     form_data = {'input': texts, 'model': model, 'truncate': True}
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
@@ -1319,7 +1352,7 @@ async def filter_accessible_collections(
             getattr(user, 'id', '<unknown>'),
         )
 
-    if user.role == 'admin':
+    if resource_admin(user):  # sub2api-embed: no admin bypass for user resources.
         return safe_names
 
     validated = set()
@@ -1393,7 +1426,7 @@ async def get_sources_from_items(
         expanded_folders.add(folder_id)
 
         folder = await Folders.get_folder_by_id(folder_id)
-        if folder and (user.role == 'admin' or await has_folder_access(user.id, folder, 'read', db=None)):
+        if folder and (resource_admin(user) or await has_folder_access(user.id, folder, 'read', db=None)):  # sub2api-embed: no admin bypass for user resources.
             files = await get_owner_accessible_folder_files(folder)
             folder_items.update((entry.get('type'), entry.get('id')) for entry in files if isinstance(entry, dict))
             items.extend(files)
@@ -1437,7 +1470,7 @@ async def get_sources_from_items(
             note = await Notes.get_note_by_id(item.get('id'))
 
             if note and (
-                user.role == 'admin'
+                resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
                 or note.user_id == user.id
                 or await AccessGrants.has_access(
                     user_id=user.id,
@@ -1456,7 +1489,7 @@ async def get_sources_from_items(
             # Chat Attached
             chat = await Chats.get_chat_by_id(item.get('id'))
             has_read_access = bool(
-                chat and ((user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS) or chat.user_id == user.id)
+                chat and ((resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS) or chat.user_id == user.id)  # sub2api-embed: no admin bypass for user resources.
             )
 
             if chat and not has_read_access:
@@ -1518,7 +1551,7 @@ async def get_sources_from_items(
                 elif item.get('id'):
                     file_object = await Files.get_file_by_id(item.get('id'))
                     if file_object and (
-                        user.role == 'admin'
+                        resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
                         or file_object.user_id == user.id
                         or await has_access_to_file(item.get('id'), 'read', user)
                         or ('file', item.get('id')) in folder_items
@@ -1549,7 +1582,7 @@ async def get_sources_from_items(
                     else:
                         file_object = await Files.get_file_by_id(file_id)
                         if file_object and (
-                            user.role == 'admin'
+                            resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
                             or file_object.user_id == user.id
                             or await has_access_to_file(file_id, 'read', user)
                             or ('file', file_id) in folder_items
@@ -1564,7 +1597,7 @@ async def get_sources_from_items(
             knowledge_base = await Knowledges.get_knowledge_by_id(item.get('id'))
 
             if knowledge_base and (
-                user.role == 'admin'
+                resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
                 or knowledge_base.user_id == user.id
                 or await AccessGrants.has_access(
                     user_id=user.id,
@@ -1587,7 +1620,7 @@ async def get_sources_from_items(
                 else:
                     if item.get('context') == 'full' or bypass_embedding_and_retrieval:
                         if knowledge_base and (
-                            user.role == 'admin'
+                            resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
                             or knowledge_base.user_id == user.id
                             or await AccessGrants.has_access(
                                 user_id=user.id,

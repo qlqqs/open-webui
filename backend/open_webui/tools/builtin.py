@@ -1,3 +1,4 @@
+from open_webui.embed.access import resource_admin, tool_denied  # sub2api-embed: user-resource isolation.
 """
 Built-in tools for Open WebUI.
 
@@ -111,7 +112,7 @@ async def _has_read_access_to_file(
     """Check if a user can read a file via ownership, admin role, model attachment, or access grants."""
     user_id = user.get('id')
     user_role = user.get('role', 'user')
-    if file.user_id == user_id or user_role == 'admin':
+    if file.user_id == user_id or resource_admin(user_role):  # sub2api-embed: no admin bypass for user resources.
         return True
     if model_knowledge and any(item.get('type') == 'file' and item.get('id') == file.id for item in model_knowledge):
         return True
@@ -1258,7 +1259,7 @@ async def view_note(
         from open_webui.models.access_grants import AccessGrants
 
         if (
-            __user__.get('role') != 'admin'
+            not resource_admin(__user__)  # sub2api-embed: no admin bypass for user resources.
             and note.user_id != user_id
             and not await AccessGrants.has_access(
                 user_id=user_id,
@@ -1268,7 +1269,7 @@ async def view_note(
                 user_group_ids=set(user_group_ids),
             )
         ):
-            return JSONCodec.dumps({'error': 'Access denied'})
+            return JSONCodec.dumps(tool_denied({'error': 'Access denied'}, {'error': 'Note not found'}))  # sub2api-embed: no note existence oracle.
 
         # Extract markdown content
         content = ''
@@ -1381,8 +1382,8 @@ async def replace_note_content(
             return JSONCodec.dumps({'error': 'Note not found', 'code': 'not_found'})
 
         user_id = __user__.get('id')
-        if __user__.get('role') != 'admin' and not await _has_write_access_to_note(note, user_id):
-            return JSONCodec.dumps({'error': 'Write access denied', 'code': 'write_access_denied'})
+        if not resource_admin(__user__) and not await _has_write_access_to_note(note, user_id):  # sub2api-embed: no admin bypass for user resources.
+            return JSONCodec.dumps(tool_denied({'error': 'Write access denied', 'code': 'write_access_denied'}, {'error': 'Note not found', 'code': 'not_found'}))  # sub2api-embed: no note existence oracle.
 
         current_content = ((note.data or {}).get('content') or {}).get('md') or ''
         applied_operation_count = 0
@@ -2231,7 +2232,7 @@ async def search_knowledge_files(
                     continue
 
                 if not (
-                    user_role == 'admin'
+                    resource_admin(user_role)  # sub2api-embed: no admin bypass for user resources.
                     or knowledge.user_id == user_id
                     or await AccessGrants.has_access(
                         user_id=user_id,
@@ -2285,7 +2286,7 @@ async def search_knowledge_files(
             # search_files_by_id does not enforce knowledge_id ownership; mirror the attached-KB check above.
             knowledge = await Knowledges.get_knowledge_by_id(knowledge_id)
             if not knowledge or not (
-                user_role == 'admin'
+                resource_admin(user_role)  # sub2api-embed: no admin bypass for user resources.
                 or knowledge.user_id == user_id
                 or await AccessGrants.has_access(
                     user_id=user_id,
@@ -2701,7 +2702,7 @@ async def grep_knowledge_files(
                         continue
                     # Verify user can access this KB
                     if not (
-                        user_role == 'admin'
+                        resource_admin(user_role)  # sub2api-embed: no admin bypass for user resources.
                         or knowledge.user_id == user_id
                         or await AccessGrants.has_access(
                             user_id=user_id,
@@ -2930,7 +2931,7 @@ async def view_knowledge_file(
 
         for knowledge_base in knowledges:
             if (
-                user_role == 'admin'
+                resource_admin(user_role)  # sub2api-embed: no admin bypass for user resources.
                 or knowledge_base.user_id == user_id
                 or await AccessGrants.has_access(
                     user_id=user_id,
@@ -2945,8 +2946,8 @@ async def view_knowledge_file(
                 break
 
         if not has_knowledge_access:
-            if file.user_id != user_id and user_role != 'admin':
-                return JSONCodec.dumps({'error': 'Access denied'})
+            if file.user_id != user_id and not resource_admin(user_role):  # sub2api-embed: no admin bypass for user resources.
+                return JSONCodec.dumps(tool_denied({'error': 'Access denied'}, {'error': 'File not found'}))  # sub2api-embed: no resource existence oracle.
 
         content = ''
         if file.data:
@@ -3080,7 +3081,7 @@ async def list_knowledge(
             if item_type == 'collection':
                 knowledge = await Knowledges.get_knowledge_by_id(item_id)
                 if knowledge and (
-                    user_role == 'admin'
+                    resource_admin(user_role)  # sub2api-embed: no admin bypass for user resources.
                     or knowledge.user_id == user_id
                     or await AccessGrants.has_access(
                         user_id=user_id,
@@ -3126,7 +3127,7 @@ async def list_knowledge(
             elif item_type == 'note':
                 note = await Notes.get_note_by_id(item_id)
                 if note and (
-                    user_role == 'admin'
+                    resource_admin(user_role)  # sub2api-embed: no admin bypass for user resources.
                     or note.user_id == user_id
                     or await AccessGrants.has_access(
                         user_id=user_id,
@@ -3229,7 +3230,7 @@ async def query_knowledge_files(
                     # Knowledge base - use KB ID as collection name
                     knowledge = await Knowledges.get_knowledge_by_id(item_id)
                     if knowledge and (
-                        user_role == 'admin'
+                        resource_admin(user_role)  # sub2api-embed: no admin bypass for user resources.
                         or knowledge.user_id == user_id
                         or await AccessGrants.has_access(
                             user_id=user_id,
@@ -3254,7 +3255,7 @@ async def query_knowledge_files(
                     # Note - always return full content as context
                     note = await Notes.get_note_by_id(item_id)
                     if note and (
-                        user_role == 'admin'
+                        resource_admin(user_role)  # sub2api-embed: no admin bypass for user resources.
                         or note.user_id == user_id
                         or await AccessGrants.has_access(
                             user_id=user_id,
@@ -3278,7 +3279,7 @@ async def query_knowledge_files(
             for knowledge_id in knowledge_ids:
                 knowledge = await Knowledges.get_knowledge_by_id(knowledge_id)
                 if knowledge and (
-                    user_role == 'admin'
+                    resource_admin(user_role)  # sub2api-embed: no admin bypass for user resources.
                     or knowledge.user_id == user_id
                     or await AccessGrants.has_access(
                         user_id=user_id,
@@ -4601,7 +4602,7 @@ async def create_calendar_event(
         cal = await Calendars.get_calendar_by_id(calendar_id)
         if not cal:
             return JSONCodec.dumps({'error': 'Calendar not found'})
-        if cal.user_id != user_id and __user__.get('role') != 'admin':
+        if cal.user_id != user_id and not resource_admin(__user__):  # sub2api-embed: no admin bypass for user resources.
             from open_webui.models.access_grants import AccessGrants
             from open_webui.models.groups import Groups
 
@@ -4613,7 +4614,7 @@ async def create_calendar_event(
                 permission='write',
                 user_group_ids=set(user_group_ids),
             ):
-                return JSONCodec.dumps({'error': 'Access denied to this calendar'})
+                return JSONCodec.dumps(tool_denied({'error': 'Access denied to this calendar'}, {'error': 'Calendar not found'}))  # sub2api-embed: no resource existence oracle.
 
         # Coerce boolean from LLM
         if isinstance(all_day, str):
@@ -4723,8 +4724,8 @@ async def update_calendar_event(
         # Check write access to the event's calendar
         cal = await Calendars.get_calendar_by_id(event.calendar_id)
         if not cal:
-            return JSONCodec.dumps({'error': 'Access denied'})
-        if cal.user_id != user_id and __user__.get('role') != 'admin':
+            return JSONCodec.dumps(tool_denied({'error': 'Access denied'}, {'error': 'Event not found'}))  # sub2api-embed: no resource existence oracle.
+        if cal.user_id != user_id and not resource_admin(__user__):  # sub2api-embed: no admin bypass for user resources.
             user_group_ids = [g.id for g in await Groups.get_groups_by_member_id(user_id, include_inherited=True)]
             if not await AccessGrants.has_access(
                 user_id=user_id,
@@ -4733,7 +4734,7 @@ async def update_calendar_event(
                 permission='write',
                 user_group_ids=set(user_group_ids),
             ):
-                return JSONCodec.dumps({'error': 'Access denied'})
+                return JSONCodec.dumps(tool_denied({'error': 'Access denied'}, {'error': 'Event not found'}))  # sub2api-embed: no resource existence oracle.
 
         # Coerce boolean strings from LLM
         if isinstance(all_day, str):
@@ -4827,8 +4828,8 @@ async def delete_calendar_event(
         # Check write access
         cal = await Calendars.get_calendar_by_id(event.calendar_id)
         if not cal:
-            return JSONCodec.dumps({'error': 'Access denied'})
-        if cal.user_id != user_id and __user__.get('role') != 'admin':
+            return JSONCodec.dumps(tool_denied({'error': 'Access denied'}, {'error': 'Event not found'}))  # sub2api-embed: no resource existence oracle.
+        if cal.user_id != user_id and not resource_admin(__user__):  # sub2api-embed: no admin bypass for user resources.
             user_group_ids = [g.id for g in await Groups.get_groups_by_member_id(user_id, include_inherited=True)]
             if not await AccessGrants.has_access(
                 user_id=user_id,
@@ -4837,7 +4838,7 @@ async def delete_calendar_event(
                 permission='write',
                 user_group_ids=set(user_group_ids),
             ):
-                return JSONCodec.dumps({'error': 'Access denied'})
+                return JSONCodec.dumps(tool_denied({'error': 'Access denied'}, {'error': 'Event not found'}))  # sub2api-embed: no resource existence oracle.
 
         title = event.title
         result = await CalendarEvents.delete_event_by_id(event_id)

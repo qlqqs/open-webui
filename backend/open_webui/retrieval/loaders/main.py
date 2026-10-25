@@ -727,6 +727,13 @@ class Loader:
                     file_ext, file_content_type
                 ):
                     return TextLoader(file_path, encoding=self._detect_text_encoding(file_path))
+                # sub2api-embed: use stock PDF/DOCX loaders; slim never performs OCR.
+                from open_webui.embed.settings import settings as embed_settings
+                if embed_settings.enabled and embed_settings.slim_doc_loaders:
+                    if file_ext == 'pdf':
+                        return PDFLoader(file_path, extract_images=False, mode=self.config['rag.pdf_loader_mode'])
+                    if file_ext == 'docx':
+                        return DocxLoader(file_path)
                 raise HTTPException(
                     503,
                     'This file type requires an external document extractor in slim. Configure one that supports it.',

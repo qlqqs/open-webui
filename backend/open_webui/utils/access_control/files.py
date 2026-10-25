@@ -1,3 +1,4 @@
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
 import logging
 
 from open_webui.models.access_grants import AccessGrants
@@ -140,7 +141,7 @@ async def get_accessible_folder_files(
         for entry in entries
         if isinstance(entry, dict) and entry.get('type') in FOLDER_FILE_TYPES and entry.get('id')
     ]
-    if user.role == 'admin':
+    if resource_admin(user):  # sub2api-embed: no admin bypass for user resources.
         return entries
 
     if user_group_ids is None:

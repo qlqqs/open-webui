@@ -41,6 +41,10 @@ try:
 except ImportError:
     print('dotenv not installed, skipping...')
 
+# sub2api-embed: apply opt-in invariants before upstream reads environment.
+from open_webui.embed.settings import settings as embed_settings, configure_environment
+configure_environment()
+
 DOCKER = os.getenv('DOCKER', 'False').lower() == 'true'
 USE_SLIM = os.getenv('USE_SLIM_DOCKER', 'False').lower() == 'true'
 
@@ -955,7 +959,10 @@ if LICENSE_PUBLIC_KEY:
 # Do not alter, remove, obscure, or replace it except as LICENSE permits:
 # https://docs.openwebui.com/license.
 WEBUI_NAME = os.getenv('WEBUI_NAME', 'Open WebUI')
-if WEBUI_NAME != 'Open WebUI':
+# sub2api-embed: deployment-only branding exception; public fork defaults unchanged.
+if embed_settings.enabled and embed_settings.hide_branding:
+    WEBUI_NAME = ''
+elif WEBUI_NAME != 'Open WebUI':
     WEBUI_NAME += ' (Open WebUI)'
 
 # LICENSE covers this Open WebUI branding surface, including this favicon

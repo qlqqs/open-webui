@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
+
 import asyncio
 import base64
 import io
@@ -135,7 +137,7 @@ async def _verify_background_image(url: str | None, user, db, previous_url: str 
     file_id = url.split('/')[-2]
     file = await Files.get_file_by_id(file_id, db=db)
     if not file or not (
-        user.role == 'admin' or file.user_id == user.id or await has_access_to_file(file_id, 'read', user, db=db)
+        resource_admin(user) or file.user_id == user.id or await has_access_to_file(file_id, 'read', user, db=db)  # sub2api-embed: no admin bypass for user resources.
     ):
         raise HTTPException(status_code=403, detail='Background image is not accessible.')
     try:
@@ -171,7 +173,7 @@ async def _verify_voice_avatar(avatar, user, db, previous=None) -> None:
             continue
         file = await Files.get_file_by_id(file_id, db=db)
         if not file or not (
-            user.role == 'admin' or file.user_id == user.id or await has_access_to_file(file_id, 'read', user, db=db)
+            resource_admin(user) or file.user_id == user.id or await has_access_to_file(file_id, 'read', user, db=db)  # sub2api-embed: no admin bypass for user resources.
         ):
             raise HTTPException(status_code=403, detail='Avatar or animation file is not accessible. Upload it again.')
         try:
@@ -189,6 +191,9 @@ async def _verify_knowledge_file_access(
     db: AsyncSession,
 ) -> None:
     """Raise 403 if any knowledge item references a file the caller cannot read."""
+    # sub2api-embed: Workspace management never delegates access to private attachments.
+    from open_webui.embed.access import check_model_attachments
+    await check_model_attachments(knowledge_items, user, db)
     if not knowledge_items or user.role == 'admin':
         return
     for item in knowledge_items:
@@ -911,10 +916,14 @@ async def _verify_version_dependencies(request, form, user, db):
     from open_webui.routers.terminals import list_terminal_servers
     from open_webui.routers.tools import get_tools
 
+    # sub2api-embed: historical versions must not restore inaccessible personal attachments.
+    from open_webui.embed.access import check_model_attachments
+    await check_model_attachments(form.meta.knowledge, user, db)
+
     async def require_resource(resource_type, resource_id, resource):
         if not resource or getattr(resource, 'is_active', True) is False:
             raise HTTPException(400, f'Referenced {resource_type} is unavailable: {resource_id}')
-        if not (user.role == 'admin' and BYPASS_ADMIN_ACCESS_CONTROL) and resource.user_id != user.id:
+        if not ((resource_admin(user) if resource_type == 'note' else user.role == 'admin') and BYPASS_ADMIN_ACCESS_CONTROL) and resource.user_id != user.id:  # sub2api-embed: Workspace authority does not confer note access.
             if not await AccessGrants.has_access(
                 user_id=user.id, resource_type=resource_type, resource_id=resource_id, permission='read', db=db
             ):
@@ -929,7 +938,7 @@ async def _verify_version_dependencies(request, form, user, db):
             continue
         if item.get('type') == 'file':
             file = await Files.get_file_by_id(item['id'], db=db)
-            if not file or not (user.role == 'admin' or await has_access_to_file(file.id, 'read', user, db=db)):
+            if not file or not (resource_admin(user) or await has_access_to_file(file.id, 'read', user, db=db)):  # sub2api-embed: no admin bypass for user resources.
                 raise HTTPException(400, 'A referenced knowledge file is missing or inaccessible.')
         elif item.get('type') == 'note':
             await require_resource('note', item['id'], await Notes.get_note_by_id(item['id'], db=db))

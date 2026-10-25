@@ -1,4 +1,6 @@
 from __future__ import annotations
+from open_webui.embed.settings import settings as embed_settings  # sub2api-embed: image policy
+from open_webui.embed import images as embed_images
 
 import asyncio
 import base64
@@ -109,7 +111,9 @@ async def get_config_values(key_map: dict[str, str]) -> dict:
 
 
 async def get_image_config() -> SimpleNamespace:
-    return SimpleNamespace(**await get_config_values(IMAGE_CONFIG_KEYS))
+    config = SimpleNamespace(**await get_config_values(IMAGE_CONFIG_KEYS))
+    # sub2api-embed: ignore stored engines, URLs, credentials and extra parameters.
+    return embed_images.configure(config) if embed_settings.enabled else config
 
 
 def config_updates(data: dict, key_map: dict[str, str]) -> dict:
@@ -183,6 +187,7 @@ async def set_image_model(request: Request, model: str):
                 url=f'{image_config.AUTOMATIC1111_BASE_URL}/sdapi/v1/options',
                 headers={'authorization': api_auth},
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
                 options = await r.json()
             if model != options['sd_model_checkpoint']:
@@ -192,6 +197,7 @@ async def set_image_model(request: Request, model: str):
                     json=options,
                     headers={'authorization': api_auth},
                     ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                    **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
                 ) as r:
                     r.raise_for_status()
         except Exception as e:
@@ -215,6 +221,7 @@ async def get_image_model(request):
                 url=f'{image_config.AUTOMATIC1111_BASE_URL}/sdapi/v1/options',
                 headers={'authorization': get_automatic1111_api_auth(image_config)},
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
                 options = await r.json()
             return options['sd_model_checkpoint']
@@ -383,6 +390,7 @@ async def get_models(request: Request, user=Depends(get_verified_user)):
                 url=f'{image_config.COMFYUI_BASE_URL}/object_info',
                 headers=headers,
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
                 info = await r.json()
 
@@ -424,6 +432,7 @@ async def get_models(request: Request, user=Depends(get_verified_user)):
                 url=f'{image_config.AUTOMATIC1111_BASE_URL}/sdapi/v1/sd-models',
                 headers={'authorization': get_automatic1111_api_auth(image_config)},
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
                 models = await r.json()
             return list(
@@ -478,6 +487,9 @@ def _is_same_origin(url: str, base_url: str) -> bool:
 
 
 async def get_image_data(data: str, headers=None, trusted_base_url: str | None = None):
+    # sub2api-embed: validate origin before network IO; never follow redirects.
+    if embed_settings.enabled and data.startswith(('http:', 'https:')):
+        return await embed_images.gateway_image(data)
     try:
         if data.startswith('http://') or data.startswith('https://'):
             # Defense-in-depth: gate before fetch (mirrors load_url_image).
@@ -499,6 +511,7 @@ async def get_image_data(data: str, headers=None, trusted_base_url: str | None =
                     data,
                     headers=headers,
                     ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                    **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
                 ) as r,
             ):
                 r.raise_for_status()
@@ -605,6 +618,9 @@ async def image_generations(
     metadata: dict | None = None,
     user=None,
 ):
+    # sub2api-embed: applies equally to built-in tool invocations.
+    if embed_settings.enabled:
+        embed_images.validate_request(form_data)
     image_config = await get_image_config()
     # if IMAGE_SIZE = 'auto', default WidthxHeight to the 512x512 default
     # This is only relevant when the user has set IMAGE_SIZE to 'auto' with an
@@ -630,6 +646,11 @@ async def image_generations(
                 'Content-Type': 'application/json',
             }
 
+            # sub2api-embed: carry billing IP, no installation auth fallback.
+            if embed_settings.enabled:
+                from open_webui.embed.gateway import headers as gateway_headers
+                headers = gateway_headers(image=True)
+                headers.pop('Content-Type', None)
             if ENABLE_FORWARD_USER_INFO_HEADERS:
                 headers = include_user_info_headers(headers, user)
 
@@ -663,6 +684,7 @@ async def image_generations(
                 json=data,
                 headers=headers,
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
                 r.raise_for_status()
                 res = await r.json(content_type=None)
@@ -715,6 +737,7 @@ async def image_generations(
                 json=data,
                 headers=headers,
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
                 r.raise_for_status()
                 res = await r.json(content_type=None)
@@ -827,6 +850,7 @@ async def image_generations(
                 json=data,
                 headers={'authorization': get_automatic1111_api_auth(image_config)},
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
                 res = await r.json(content_type=None)
             log.debug('res: %s', res)
@@ -905,6 +929,9 @@ async def image_edits(
     metadata: dict | None = None,
     user=Depends(get_verified_user),
 ):
+    # sub2api-embed: applies equally to built-in tool invocations.
+    if embed_settings.enabled:
+        embed_images.validate_request(form_data)
     image_config = await get_image_config()
     size = None
     width, height = None, None
@@ -921,6 +948,9 @@ async def image_edits(
     try:
 
         async def load_url_image(data):
+            # sub2api-embed: no external image URL downloads, including file-shaped URLs.
+            if embed_settings.enabled:
+                return await embed_images.edit_source(data, user)
             if data.startswith('data:'):
                 return data
 
@@ -986,6 +1016,11 @@ async def image_edits(
                 'Authorization': f'Bearer {image_config.IMAGES_EDIT_OPENAI_API_KEY}',
             }
 
+            # sub2api-embed: carry billing IP, no installation auth fallback.
+            if embed_settings.enabled:
+                from open_webui.embed.gateway import headers as gateway_headers
+                headers = gateway_headers(image=True)
+                headers.pop('Content-Type', None)
             if ENABLE_FORWARD_USER_INFO_HEADERS:
                 headers = include_user_info_headers(headers, user)
 
@@ -1042,6 +1077,7 @@ async def image_edits(
                 headers=headers,
                 data=form,
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
                 r.raise_for_status()
                 res = await r.json(content_type=None)
@@ -1099,6 +1135,7 @@ async def image_edits(
                 json=data,
                 headers=headers,
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as r:
                 r.raise_for_status()
                 res = await r.json(content_type=None)

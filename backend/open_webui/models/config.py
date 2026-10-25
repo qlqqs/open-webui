@@ -133,6 +133,10 @@ class Config(Base):
 
     @classmethod
     def persistent_enabled_for(cls, key: str) -> bool:
+        # sub2api-embed: the sole admin-config exception must survive restarts.
+        from open_webui.embed.settings import settings as embed_settings
+        if embed_settings.enabled and key == 'tool_server.connections':
+            return True
         if not cls.PERSISTENT_ENABLED:
             return False
         if key.startswith('oauth.') and not cls.OAUTH_PERSISTENT_ENABLED:

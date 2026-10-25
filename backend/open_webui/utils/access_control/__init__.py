@@ -326,6 +326,10 @@ async def has_base_model_access(
         seen.add(base_model_id)
         base_model_info = await Models.get_model_by_id(base_model_id, db=db)
         if base_model_info is None:
+            # sub2api-embed: gateway authorizes bare base models; preset ACLs remain enforced.
+            from open_webui.embed.settings import settings as embed_settings
+            if embed_settings.enabled:
+                return True
             if user_role != 'admin':
                 log.warning(
                     'Model access denied: user_id=%r model_id=%r base_model_id=%r reason=base_model_unregistered',
@@ -376,6 +380,10 @@ async def check_model_access(
     """
     from fastapi import HTTPException
 
+    # sub2api-embed: bare gateway models need no duplicate local registration.
+    from open_webui.embed.settings import settings as embed_settings
+    if embed_settings.enabled and model_info is None:
+        return
     if bypass_filter:
         return
 

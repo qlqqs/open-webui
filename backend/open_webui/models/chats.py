@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
+
 from contextlib import asynccontextmanager
 from copy import deepcopy
 import logging
@@ -1923,7 +1925,7 @@ class ChatTable:
             return None
         if (
             chat.user_id == user.id
-            or user.role == 'admin'
+            or resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
             and permission == 'read'
             and (ENABLE_ADMIN_CHAT_ACCESS or is_internal_chat(chat.meta))
         ):
@@ -2851,7 +2853,7 @@ class ChatTable:
                 continue
             if (
                 file.user_id == user_id
-                or (user and user.role == 'admin')
+                or (user and resource_admin(user))  # sub2api-embed: no admin bypass for user resources.
                 or (user and await has_access_to_file(file_id, 'read', user, db=db))
             ):
                 accessible_file_ids.append(file_id)

@@ -605,6 +605,8 @@ async def get_builtin_tools(
     Get built-in tools for native function calling.
     Only returns tools when BOTH the global config is enabled AND the model capability allows it.
     """
+    # sub2api-embed: category exceptions (voice/note chat) must respect the allowlist too.
+    from open_webui.embed.settings import settings as embed_settings
     tools_dict = {}
     builtin_functions = []
     features = features or {}
@@ -617,6 +619,10 @@ async def get_builtin_tools(
     # Helper to check if a builtin tool category is enabled via meta.builtinTools
     # Defaults to True if not specified (backward compatible)
     def is_builtin_tool_enabled(category: str, default: bool = True) -> bool:
+        # sub2api-embed: intersect categories with the deployment allowlist.
+        from open_webui.embed.settings import settings as embed_settings
+        if embed_settings.enabled and category not in embed_settings.builtin_tool_categories:
+            return False
         builtin_tools = model.get('info', {}).get('meta', {}).get('builtinTools', {})
         return builtin_tools.get(category, default)
 
@@ -658,7 +664,8 @@ async def get_builtin_tools(
     gestures = (model.get('info', {}).get('meta', {}).get('voice_avatar') or {}).get('gestures', [])
     event_call = extra_params.get('__event_call__')
     if (
-        features.get('voice')
+        not embed_settings.enabled
+        and features.get('voice')
         and gestures
         and event_call
         and get_model_capability('builtin_tools')
@@ -832,7 +839,7 @@ async def get_builtin_tools(
         builtin_functions.append(execute_code)
 
     # Notes tools - search, view, create, and update user's notes
-    if is_note_chat or (
+    if (is_note_chat and (not embed_settings.enabled or 'notes' in embed_settings.builtin_tool_categories)) or (
         is_builtin_tool_enabled('notes') and config.get('notes.enable') and await has_user_permission('notes')
     ):
         builtin_functions.extend([search_notes, view_note, write_note, replace_note_content])

@@ -1,3 +1,4 @@
+from open_webui.embed.access import resource_admin, private_denied  # sub2api-embed: user-resource isolation.
 import logging
 from typing import Optional
 from uuid import uuid4
@@ -74,7 +75,7 @@ async def leave_note_rooms_for_revoked_users(
 
     users = await Users.get_users_by_user_ids(list(revoked_user_ids), db=db)
     # Admins retain access to notes regardless of grants.
-    user_ids = [user.id for user in users if user.role != 'admin']
+    user_ids = [user.id for user in users if not resource_admin(user)]  # sub2api-embed: no admin bypass for user resources.
     for room in [f'note:{note.id}', f'doc_note:{note.id}']:
         await leave_room_for_users(room, user_ids)
 
@@ -198,7 +199,7 @@ async def search_notes(
     if direction:
         filter['direction'] = direction
 
-    if not user.role == 'admin' or not BYPASS_ADMIN_ACCESS_CONTROL:
+    if not resource_admin(user) or not BYPASS_ADMIN_ACCESS_CONTROL:  # sub2api-embed: no admin bypass for user resources.
         groups = await Groups.get_groups_by_member_id(user.id, db=db, include_inherited=True)
         if groups:
             filter['group_ids'] = [group.id for group in groups]
@@ -273,7 +274,7 @@ async def get_note_by_id(
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND)
 
-    if user.role != 'admin' and (
+    if not resource_admin(user) and (  # sub2api-embed: no admin bypass for user resources.
         user.id != note.user_id
         and (
             not await AccessGrants.has_access(
@@ -285,10 +286,10 @@ async def get_note_by_id(
             )
         )
     ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.DEFAULT())
+        raise private_denied(403, ERROR_MESSAGES.DEFAULT())  # sub2api-embed: hide private note existence.
 
     write_access = (
-        user.role == 'admin'
+        resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
         or (user.id == note.user_id)
         or await AccessGrants.has_access(
             user_id=user.id,
@@ -321,7 +322,7 @@ async def get_note_chat_by_id(
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND)
 
-    if user.role != 'admin' and (
+    if not resource_admin(user) and (  # sub2api-embed: no admin bypass for user resources.
         user.id != note.user_id
         and not await AccessGrants.has_access(
             user_id=user.id,
@@ -331,7 +332,7 @@ async def get_note_chat_by_id(
             db=db,
         )
     ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.DEFAULT())
+        raise private_denied(403, ERROR_MESSAGES.DEFAULT())  # sub2api-embed: hide private note existence.
 
     chat = await Chats.get_internal_chat_by_note_id(note.id, user.id, db=db)
     if chat:
@@ -405,7 +406,7 @@ async def get_note_chats_by_id(
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND)
 
-    if user.role != 'admin' and (
+    if not resource_admin(user) and (  # sub2api-embed: no admin bypass for user resources.
         user.id != note.user_id
         and not await AccessGrants.has_access(
             user_id=user.id,
@@ -415,7 +416,7 @@ async def get_note_chats_by_id(
             db=db,
         )
     ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.DEFAULT())
+        raise private_denied(403, ERROR_MESSAGES.DEFAULT())  # sub2api-embed: hide private note existence.
 
     chats = await Chats.get_internal_chats_by_note_id(note.id, user.id, db=db)
     normalized_chats = []
@@ -457,7 +458,7 @@ async def create_note_chat_by_id(
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND)
 
-    if user.role != 'admin' and (
+    if not resource_admin(user) and (  # sub2api-embed: no admin bypass for user resources.
         user.id != note.user_id
         and not await AccessGrants.has_access(
             user_id=user.id,
@@ -467,7 +468,7 @@ async def create_note_chat_by_id(
             db=db,
         )
     ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.DEFAULT())
+        raise private_denied(403, ERROR_MESSAGES.DEFAULT())  # sub2api-embed: hide private note existence.
 
     chat_id = str(uuid4())
     chat = await Chats.insert_new_chat(
@@ -521,7 +522,7 @@ async def update_note_by_id(
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND)
 
-    if user.role != 'admin' and (
+    if not resource_admin(user) and (  # sub2api-embed: no admin bypass for user resources.
         user.id != note.user_id
         and not await AccessGrants.has_access(
             user_id=user.id,
@@ -531,7 +532,7 @@ async def update_note_by_id(
             db=db,
         )
     ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.DEFAULT())
+        raise private_denied(403, ERROR_MESSAGES.DEFAULT())  # sub2api-embed: hide private note existence.
 
     if form_data.access_grants is not None:
         form_data.access_grants = await filter_allowed_access_grants(
@@ -601,7 +602,7 @@ async def update_note_access_by_id(
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND)
 
-    if user.role != 'admin' and (
+    if not resource_admin(user) and (  # sub2api-embed: no admin bypass for user resources.
         user.id != note.user_id
         and not await AccessGrants.has_access(
             user_id=user.id,
@@ -611,7 +612,7 @@ async def update_note_access_by_id(
             db=db,
         )
     ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.DEFAULT())
+        raise private_denied(403, ERROR_MESSAGES.DEFAULT())  # sub2api-embed: hide private note existence.
 
     form_data.access_grants = await filter_allowed_access_grants(
         await Config.get('user.permissions'),
@@ -654,7 +655,7 @@ async def pin_note_by_id(
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND)
 
-    if user.role != 'admin' and (
+    if not resource_admin(user) and (  # sub2api-embed: no admin bypass for user resources.
         user.id != note.user_id
         and not await AccessGrants.has_access(
             user_id=user.id,
@@ -664,7 +665,7 @@ async def pin_note_by_id(
             db=db,
         )
     ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.DEFAULT())
+        raise private_denied(403, ERROR_MESSAGES.DEFAULT())  # sub2api-embed: hide private note existence.
 
     note = await Notes.toggle_note_pinned_by_id(id, user.id, db=db)
     pinned_note_ids = await Notes.get_pinned_note_ids(user.id, db=db)
@@ -697,7 +698,7 @@ async def delete_note_by_id(
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND)
 
-    if user.role != 'admin' and (
+    if not resource_admin(user) and (  # sub2api-embed: no admin bypass for user resources.
         user.id != note.user_id
         and not await AccessGrants.has_access(
             user_id=user.id,
@@ -707,7 +708,7 @@ async def delete_note_by_id(
             db=db,
         )
     ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.DEFAULT())
+        raise private_denied(403, ERROR_MESSAGES.DEFAULT())  # sub2api-embed: hide private note existence.
 
     try:
         note = await Notes.delete_note_by_id(id, db=db)

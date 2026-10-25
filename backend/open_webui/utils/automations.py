@@ -91,7 +91,10 @@ async def scheduler_worker_loop(app) -> None:
             try:
                 from open_webui.utils.timers import claim_due_timers, execute_due_timer
 
-                for timer_id, claim_id in await claim_due_timers(int(time.time_ns()), limit=10):
+                # sub2api-embed: do not revive timers from a reused upstream database.
+                from open_webui.embed.settings import settings as embed_settings
+                due_timers = [] if embed_settings.enabled else await claim_due_timers(int(time.time_ns()), limit=10)
+                for timer_id, claim_id in due_timers:
                     asyncio.create_task(execute_due_timer(app, timer_id, claim_id))
             except Exception:
                 log.exception('Scheduler: timer error')

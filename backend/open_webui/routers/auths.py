@@ -1,4 +1,5 @@
 from __future__ import annotations
+from open_webui.embed.settings import settings as embed_settings  # sub2api-embed: opt-in auth
 
 import asyncio
 import datetime
@@ -207,6 +208,7 @@ async def get_session_user(
         max_age = int(expires_at - time.time()) if expires_at else None
         response.set_cookie(
             key='token',
+            path='/_chat' if embed_settings.enabled else '/',  # sub2api-embed: isolate cookie
             value=token,
             expires=(datetime.datetime.fromtimestamp(expires_at, datetime.timezone.utc) if expires_at else None),
             httponly=True,  # Ensures the cookie is not accessible via JavaScript
@@ -599,7 +601,8 @@ async def ldap_auth(
 
                     # Atomically check if this is the only user *after* the
                     # insert.  Only the single user present should become admin.
-                    if await Users.get_num_users(db=db) == 1:
+                    # sub2api-embed: only the trusted role header grants admin.
+                    if not embed_settings.enabled and await Users.get_num_users(db=db) == 1:
                         await Users.update_user_role_by_id(user.id, 'admin', db=db)
                         user = await Users.get_user_by_id(user.id, db=db)
 
@@ -821,7 +824,8 @@ async def signup_handler(
 
     # Atomically check if this is the only user *after* the insert.
     # Only the single user present at this point should become admin.
-    if await Users.get_num_users(db=db) == 1:
+    # sub2api-embed: only the trusted role header grants admin.
+    if not embed_settings.enabled and await Users.get_num_users(db=db) == 1:
         await Users.update_user_role_by_id(user.id, 'admin', db=db)
         user = await Users.get_user_by_id(user.id, db=db)
         await Config.upsert({'ui.enable_signup': False})

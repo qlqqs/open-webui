@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
+
 import asyncio
 import io
 import logging
@@ -1580,9 +1582,13 @@ async def process_file(
     Note: granular session management is used to prevent connection pool exhaustion.
     The session is committed before external API calls, and updates use a fresh session.
     """
+    # sub2api-embed: extraction-only endpoint, never a knowledge/vector collection operation.
+    from open_webui.embed.settings import settings as embed_settings
+    if embed_settings.enabled and form_data.collection_name is not None:
+        raise HTTPException(403, '知识库与向量检索不可用')
     config = await Config.get_many(*RETRIEVAL_CONFIG_KEYS.values())
     file = await Files.get_file_by_id(form_data.file_id, db=db)
-    if file and file.user_id != user.id and user.role != 'admin':
+    if file and file.user_id != user.id and not resource_admin(user):  # sub2api-embed: no admin bypass for user resources.
         if not await has_access_to_file(file.id, 'write', user, db=db):
             file = None
 
@@ -1603,7 +1609,9 @@ async def process_file(
 
                 try:
                     # /files/{file_id}/data/content/update
-                    await ASYNC_VECTOR_DB_CLIENT.delete_collection(collection_name=file_collection_name)
+                    # sub2api-embed: edited text in full-context mode has no vector side effects.
+                    if not embed_settings.enabled:
+                        await ASYNC_VECTOR_DB_CLIENT.delete_collection(collection_name=file_collection_name)
                 except Exception:
                     # Audio file upload pipeline
                     pass
@@ -3056,7 +3064,7 @@ async def process_files_batch(
                     )
                 )
                 continue
-            if db_file.user_id != user.id and user.role != 'admin':
+            if db_file.user_id != user.id and not resource_admin(user):  # sub2api-embed: no admin bypass for user resources.
                 file_errors.append(
                     BatchProcessFilesResult(
                         file_id=file.id,

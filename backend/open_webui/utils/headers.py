@@ -175,6 +175,12 @@ async def get_headers_and_cookies(
     metadata: dict | None = None,
     user=None,
 ):
+    # sub2api-embed: reject external destinations before attaching a billing key.
+    from open_webui.embed.settings import settings as embed_settings
+    if embed_settings.enabled:
+        from open_webui.embed.gateway import headers, require_gateway_url
+        require_gateway_url(url)
+        return headers(), {}
     config = config or {}
     cookies = getattr(request, 'cookies', {}) if config.get('forward_cookies', False) else {}
     headers = {

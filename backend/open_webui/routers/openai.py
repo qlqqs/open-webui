@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+# sub2api-embed: all provider connections share one request-scoped gateway.
+from open_webui.embed.settings import settings as embed_settings
+from open_webui.embed import gateway as embed_gateway
 import hashlib
 import logging
 import re
@@ -91,6 +94,11 @@ async def send_get_request(
     user: UserModel = None,
     config=None,
 ):
+    # sub2api-embed: old model-list branch cannot use stored URLs/keys.
+    if embed_settings.enabled:
+        url = embed_settings.gateway_url + '/v1/models'
+        key = embed_gateway.current_key()
+        config = {}
     try:
         async with aiohttp.ClientSession(timeout=_MODEL_LIST_TIMEOUT, trust_env=True) as session:
             if request and config:
@@ -104,11 +112,15 @@ async def send_get_request(
                 if ENABLE_FORWARD_USER_INFO_HEADERS and user:
                     headers = include_user_info_headers(headers, user, request=request)
 
+            # sub2api-embed: no user-configurable auth, cookies, or redirect escapes.
+            if embed_settings.enabled:
+                headers, cookies = embed_gateway.headers(), {}
             async with session.get(
                 url,
                 headers=headers,
                 cookies=cookies,
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             ) as response:
                 return await response.json(loads=JSONCodec.loads)
     except Exception as e:
@@ -233,6 +245,10 @@ async def get_openai_config() -> dict:
 
 
 async def get_openai_runtime_config() -> tuple[bool, list[str], list[str], dict]:
+    # sub2api-embed: do not read installation credentials.
+    if embed_settings.enabled:
+        url, key, config = embed_gateway.connection()
+        return True, [url], [key], {'0': config}
     values = await Config.get_many('openai.enable', 'openai.api_base_urls', 'openai.api_keys', 'openai.api_configs')
     return (
         values.get('openai.enable'),
@@ -253,6 +269,9 @@ async def normalize_openai_api_keys(api_base_urls: list[str], api_keys: list[str
 
 
 async def get_openai_connection(idx: int) -> tuple[str, str, dict]:
+    # sub2api-embed: ignore index and all unsafe connection options.
+    if embed_settings.enabled:
+        return embed_gateway.connection()
     _, api_base_urls, api_keys, api_configs = await get_openai_runtime_config()
     url = api_base_urls[idx]
     key = api_keys[idx]
@@ -337,6 +356,7 @@ async def send_model_management_request(
             headers=headers,
             cookies=cookies,
             ssl=AIOHTTP_CLIENT_SESSION_SSL,
+            **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             timeout=get_client_timeout(stream=stream),
         )
 
@@ -423,6 +443,7 @@ async def count_anthropic_tokens(request: Request, form_data: dict, user: UserMo
             headers=headers,
             cookies=cookies,
             ssl=AIOHTTP_CLIENT_SESSION_SSL,
+            **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             timeout=get_client_timeout(),
         )
 
@@ -552,6 +573,7 @@ async def speech(request: Request, user=Depends(get_verified_user)):
                 headers=headers,
                 cookies=cookies,
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             )
 
             r.raise_for_status()
@@ -712,7 +734,7 @@ async def get_filtered_models(models, user, db=None):
     # static key, so a `key=lambda` collapsed every caller to one shared entry.
     key_builder=lambda _func, request, user=None: f'openai_all_models_{user.id}' if user else 'openai_all_models',
 )
-async def get_all_models(request: Request, user: UserModel) -> dict[str, list]:
+async def _upstream_get_all_models(request: Request, user: UserModel) -> dict[str, list]:
     log.info('get_all_models()')
 
     enable_openai_api, api_base_urls, _, api_configs = await get_openai_runtime_config()
@@ -780,9 +802,23 @@ async def get_all_models(request: Request, user: UserModel) -> dict[str, list]:
     return {'data': list(models.values())}
 
 
+# sub2api-embed: bypass upstream user-id/global-view cache entirely.
+async def get_all_models(request: Request, user: UserModel):
+    if embed_settings.enabled:
+        from open_webui.embed.models import gateway_models
+        return await gateway_models(request)
+    return await _upstream_get_all_models(request, user)
+
+
+get_all_models.cache = _upstream_get_all_models.cache
+
+
 @router.get('/models')
 @router.get('/models/{url_idx}')
 async def get_models(request: Request, url_idx: int | None = None, user=Depends(get_verified_user)):
+    # sub2api-embed: return only this Key's gateway view.
+    if embed_settings.enabled:
+        return await get_all_models(request, user)
     if url_idx is not None and user.role != 'admin':
         raise HTTPException(status_code=401, detail=ERROR_MESSAGES.ACCESS_PROHIBITED)
 
@@ -821,6 +857,7 @@ async def get_models(request: Request, url_idx: int | None = None, user=Depends(
                         headers=headers,
                         cookies=cookies,
                         ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                        **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
                     ) as r:
                         if r.status != 200:
                             error_detail = f'HTTP Error: {r.status}'
@@ -1021,6 +1058,7 @@ async def verify_connection(
                     headers=headers,
                     cookies=cookies,
                     ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                    **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
                 ) as r:
                     try:
                         response_data = await r.json(loads=JSONCodec.loads)
@@ -1047,6 +1085,7 @@ async def verify_connection(
                     headers=headers,
                     cookies=cookies,
                     ssl=AIOHTTP_CLIENT_SESSION_SSL,
+                    **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
                 ) as r:
                     try:
                         response_data = await r.json(loads=JSONCodec.loads)
@@ -1589,6 +1628,7 @@ async def generate_chat_completion(
             headers=headers,
             cookies=cookies,
             ssl=AIOHTTP_CLIENT_SESSION_SSL,
+            **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             timeout=get_client_timeout(stream=is_streaming_request),
         )
 
@@ -1745,6 +1785,7 @@ async def embeddings(request: Request, form_data: dict, user):
             cookies=cookies,
             timeout=get_client_timeout(),
             ssl=AIOHTTP_CLIENT_SESSION_SSL,
+            **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
         )
 
         if 'text/event-stream' in r.headers.get('Content-Type', ''):
@@ -1873,6 +1914,7 @@ async def responses(
             headers=headers,
             cookies=cookies,
             ssl=AIOHTTP_CLIENT_SESSION_SSL,
+            **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             timeout=get_client_timeout(stream=is_streaming_request),
         )
 
@@ -1997,6 +2039,7 @@ async def proxy(path: str, request: Request, user=Depends(get_verified_user)):
             headers=headers,
             cookies=cookies,
             ssl=AIOHTTP_CLIENT_SESSION_SSL,
+            **({'allow_redirects': False} if embed_settings.enabled else {}),  # sub2api-embed: no redirect escape
             timeout=get_client_timeout(stream=is_streaming_request),
         )
 

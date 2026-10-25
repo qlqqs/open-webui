@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
+from open_webui.embed.settings import settings as embed_settings  # sub2api-embed: socket surfaces
+from open_webui.embed.sub2api_auth import socket_identity_matches  # sub2api-embed: socket identity
+
 import asyncio
 import copy
 import logging
@@ -122,7 +126,7 @@ if WEBSOCKET_MANAGER == 'redis':
         serializer=JSONOnlyPacket,
         transports=(['websocket'] if ENABLE_WEBSOCKET_SUPPORT else ['polling']),
         allow_upgrades=ENABLE_WEBSOCKET_SUPPORT,
-        always_connect=True,
+        always_connect=not embed_settings.enabled,  # sub2api-embed: authenticate before CONNECT ack
         client_manager=redis_manager,
         logger=WEBSOCKET_SERVER_LOGGING,
         ping_interval=WEBSOCKET_SERVER_PING_INTERVAL,
@@ -138,7 +142,7 @@ else:
         serializer=JSONOnlyPacket,
         transports=(['websocket'] if ENABLE_WEBSOCKET_SUPPORT else ['polling']),
         allow_upgrades=ENABLE_WEBSOCKET_SUPPORT,
-        always_connect=True,
+        always_connect=not embed_settings.enabled,  # sub2api-embed: authenticate before CONNECT ack
         logger=WEBSOCKET_SERVER_LOGGING,
         ping_interval=WEBSOCKET_SERVER_PING_INTERVAL,
         ping_timeout=WEBSOCKET_SERVER_PING_TIMEOUT,
@@ -418,7 +422,9 @@ async def get_socket_session_user(sid: str, *, wait_for_disconnect: bool = True)
     """Session user from this worker's local Socket.IO store; only locally connected sids are ever looked up."""
     try:
         session = await sio.get_session(sid)
-        if session.get('user') and await get_verified_user_by_token(session.get('token', ''), REDIS):
+        # sub2api-embed: repeat the handshake identity check on every session validation.
+        verified = await get_verified_user_by_token(session.get('token', ''), REDIS)
+        if session.get('user') and verified and socket_identity_matches(verified, sio.get_environ(sid)):
             return session['user']
     except Exception:
         log.debug('Socket authentication expired for %s', sid)
@@ -549,6 +555,9 @@ async def usage(sid, data):
 
 @sio.event
 async def connect(sid, environ, auth):
+    # sub2api-embed: anonymous socket namespaces are not usable sessions.
+    if embed_settings.enabled and not (auth and auth.get('token')):
+        return False
     user = None
     if auth and 'token' in auth:
         scope = (environ or {}).get('asgi.scope') or {}
@@ -556,6 +565,9 @@ async def connect(sid, environ, auth):
         redis = getattr(getattr(fastapi_app, 'state', None), 'redis', None) or REDIS
         user = await get_verified_user_by_token(auth['token'], redis)
 
+        # sub2api-embed: reject stale JWTs after account switching.
+        if not socket_identity_matches(user, environ):
+            return False
         if user:
             socket_user = {
                 **user.model_dump(
@@ -586,7 +598,9 @@ async def user_join(sid, data):
     fastapi_app = scope.get('app')
     redis = getattr(getattr(fastapi_app, 'state', None), 'redis', None) or REDIS
     user = await get_verified_user_by_token(auth['token'], redis)
-    if not user:
+    # sub2api-embed: user-join cannot change the handshake identity.
+    if not user or not socket_identity_matches(user, environ):
+        await sio.disconnect(sid)
         return
 
     socket_user = {
@@ -608,7 +622,8 @@ async def user_join(sid, data):
     await sio.enter_room(sid, f'user:{user.id}')
 
     # Join all the channels only if user has channels permission
-    if user.role == 'admin' or await has_permission(user.id, 'features.channels', await Config.get('user.permissions')):
+    # sub2api-embed: no channel rooms, including for administrators.
+    if not embed_settings.enabled and (user.role == 'admin' or await has_permission(user.id, 'features.channels', await Config.get('user.permissions'))):
         channels = await Channels.get_channels_by_user_id(user.id)
         log.debug('channels=%r', channels)
         for channel in channels:
@@ -663,6 +678,9 @@ async def heartbeat(sid, data):
 
 @sio.on('join-channels')
 async def join_channel(sid, data):
+    # sub2api-embed: channel feature is also blocked on the socket transport.
+    if embed_settings.enabled:
+        return
     auth = data['auth'] if 'auth' in data else None
     if not auth or 'token' not in auth:
         return
@@ -676,7 +694,8 @@ async def join_channel(sid, data):
         return
 
     # Join all the channels only if user has channels permission
-    if user.role == 'admin' or await has_permission(user.id, 'features.channels', await Config.get('user.permissions')):
+    # sub2api-embed: no channel rooms, including for administrators.
+    if not embed_settings.enabled and (user.role == 'admin' or await has_permission(user.id, 'features.channels', await Config.get('user.permissions'))):
         channels = await Channels.get_channels_by_user_id(user.id)
         log.debug('channels=%r', channels)
         for channel in channels:
@@ -694,7 +713,8 @@ async def join_note(sid, data):
     fastapi_app = scope.get('app')
     redis = getattr(getattr(fastapi_app, 'state', None), 'redis', None) or REDIS
     user = await get_verified_user_by_token(auth['token'], redis)
-    if not user:
+    # sub2api-embed: event-supplied JWT must match the handshake too.
+    if not user or not socket_identity_matches(user, environ):
         return
 
     if user.role != 'admin' and not await has_permission(
@@ -708,7 +728,7 @@ async def join_note(sid, data):
         return
 
     if (
-        user.role != 'admin'
+        not resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
         and user.id != note.user_id
         and not await AccessGrants.has_access(
             user_id=user.id,
@@ -726,6 +746,9 @@ async def join_note(sid, data):
 
 @sio.on('events:channel')
 async def channel_events(sid, data):
+    # sub2api-embed: channel feature is also blocked on the socket transport.
+    if embed_settings.enabled:
+        return
     room = f'channel:{data["channel_id"]}'
     if sid not in (get_room_sid_map(sio.manager, '/', room) or {}):
         return
@@ -878,6 +901,10 @@ def with_document_lock(handler):
     @wraps(handler)
     async def wrapped(sid, data):
         try:
+            # sub2api-embed: do not create unprotected arbitrary document rooms.
+            from open_webui.embed.access import valid_document_id
+            if not valid_document_id(normalize_document_id(data['document_id'])):
+                return
             async with YDOC_MANAGER.lock(normalize_document_id(data['document_id'])):
                 return await handler(sid, data)
         except Exception:
@@ -910,7 +937,7 @@ async def ydoc_document_join(sid, data):
                 return
 
             if (
-                user.get('role') != 'admin'
+                not resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
                 and user.get('id') != note.user_id
                 and not await AccessGrants.has_access(
                     user_id=user.get('id'),
@@ -922,8 +949,9 @@ async def ydoc_document_join(sid, data):
                 log.error(f'User {user.get("id")} does not have access to note {note_id}')
                 return
 
-        user_id = data.get('user_id', sid)
-        user_name = data.get('user_name', 'Anonymous')
+        # sub2api-embed: collaboration presence cannot impersonate another user.
+        user_id = user['id'] if embed_settings.enabled else data.get('user_id', sid)
+        user_name = user.get('name', '') if embed_settings.enabled else data.get('user_name', 'Anonymous')
         user_color = data.get('user_color', '#000000')
 
         if (
@@ -991,7 +1019,7 @@ async def document_save_handler(document_id, data, user):
             return
 
         if (
-            user.get('role') != 'admin'
+            not resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
             and user.get('id') != note.user_id
             and not await AccessGrants.has_access(
                 user_id=user.get('id'),
@@ -1077,7 +1105,7 @@ async def yjs_document_update(sid, data):
                 return
 
             if (
-                user.get('role') != 'admin'
+                not resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
                 and user.get('id') != note.user_id
                 and not await AccessGrants.has_access(
                     user_id=user.get('id'),
@@ -1092,7 +1120,7 @@ async def yjs_document_update(sid, data):
         update = data.get('update')  # List of bytes from frontend
 
         if update:
-            user_id = data.get('user_id', sid)
+            user_id = user['id'] if embed_settings.enabled else data.get('user_id', sid)  # sub2api-embed: authenticated presence.
 
             stored = await YDOC_MANAGER.append_to_updates(
                 document_id=document_id,

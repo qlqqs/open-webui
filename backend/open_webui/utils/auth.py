@@ -1,4 +1,5 @@
 from __future__ import annotations
+from open_webui.embed.settings import settings as embed_settings  # sub2api-embed: cookie isolation
 
 import asyncio
 import base64
@@ -411,6 +412,10 @@ async def get_current_user(
     if token is None:
         raise HTTPException(status_code=401, detail='Not authenticated')
 
+    # sub2api-embed: own API keys never bypass trusted identity.
+    if embed_settings.enabled and token.startswith('sk-'):
+        raise HTTPException(401, 'API keys are disabled')
+
     # auth by api key
     if token.startswith('sk-'):
         user = await get_current_user_by_api_key(request, token)
@@ -455,6 +460,10 @@ async def get_current_user(
                     detail=ERROR_MESSAGES.INVALID_TOKEN,
                 )
             else:
+                # sub2api-embed: missing/mismatched identity fails closed; role sync per request.
+                if embed_settings.enabled:
+                    from open_webui.embed.sub2api_auth import sync_user
+                    user = await sync_user(user, request.headers)
                 if WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
                     trusted_email = request.headers.get(WEBUI_AUTH_TRUSTED_EMAIL_HEADER, '').lower()
                     if trusted_email and user.email != trusted_email:
@@ -491,7 +500,7 @@ async def get_current_user(
     except Exception as e:
         # Delete the token cookie
         if request.cookies.get('token'):
-            response.delete_cookie('token')
+            response.delete_cookie('token', path='/_chat' if embed_settings.enabled else '/')  # sub2api-embed: scoped cookie
 
         if request.cookies.get('oauth_id_token'):
             response.delete_cookie('oauth_id_token')
@@ -733,6 +742,7 @@ async def create_session_response(
         response.set_cookie(
             'token',
             token,
+            path='/_chat' if embed_settings.enabled else '/',  # sub2api-embed: sign-in cookie
             httponly=True,
             secure=WEBUI_AUTH_COOKIE_SECURE,
             samesite=WEBUI_AUTH_COOKIE_SAME_SITE,

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
+
 import asyncio
 import copy
 import logging
@@ -435,7 +437,8 @@ async def lifespan(app: FastAPI):
 
     app.state.scheduler_worker_loop = asyncio.create_task(scheduler_worker_loop(app))
 
-    if await Config.get('models.base_models_cache'):
+    # sub2api-embed: startup has no billing context.
+    if not embed_settings.enabled and await Config.get('models.base_models_cache'):
         try:
             await get_all_models(
                 Request(
@@ -1126,13 +1129,17 @@ async def embeddings(request: Request, form_data: dict, user=Depends(get_verifie
         dict: OpenAI-compatible embeddings response.
     """
     # Make sure models are loaded in app state
-    if not request.app.state.MODELS:
+    # sub2api-embed: refresh this Key's view, merge into the metadata union.
+    if embed_settings.enabled or not request.app.state.MODELS:
         await get_all_models(request, user=user)
     # Use generic dispatcher in utils.embeddings
     return await generate_embeddings(request, form_data, user)
 
 
 async def _set_direct_model(request: Request, model_item: dict, user) -> None:
+    # sub2api-embed: cover all direct-model entry points.
+    from open_webui.embed.gateway import reject_direct
+    reject_direct(model_item)
     model_meta = (model_item.get('info') or {}).get('meta') or {}
     knowledge_items = model_meta.get('knowledge')
     if knowledge_items:
@@ -1150,12 +1157,16 @@ async def chat_completion(
     form_data: dict,
     user=Depends(get_verified_user),
 ):
-    if not request.app.state.MODELS:
+    # sub2api-embed: refresh this Key's view, merge into the metadata union.
+    if embed_settings.enabled or not request.app.state.MODELS:
         await get_all_models(request, user=user)
 
     model_id = form_data.get('model', None)
     request.state.model_id = model_id
     model_item = form_data.pop('model_item', {})
+    # sub2api-embed: never dispatch browser-controlled connections.
+    from open_webui.embed.gateway import reject_direct
+    reject_direct(model_item)
     tasks = form_data.pop('background_tasks', None)
 
     metadata = {}
@@ -1363,6 +1374,10 @@ async def chat_completion(
                 'model_controls': model_controls,
             },
         }
+
+        # sub2api-embed: callbacks/temporary chats may only target the caller's socket.
+        from open_webui.embed.access import check_chat_session
+        check_chat_session(chat_id, metadata.get('session_id'), user.id, get_user_id_from_session_pool)
 
         if is_new_chat:
             metadata['chat_id'] = str(uuid4())
@@ -2113,6 +2128,9 @@ async def generate_messages(
 
 async def verify_chat_ownership(chat_id: str | None, user) -> None:
     """Temporary chats are per-socket and unsaved, so they have no owner to check."""
+    # sub2api-embed: temporary chat actions/outlets cannot address another user's socket.
+    from open_webui.embed.access import check_chat_session
+    check_chat_session(chat_id, None, user.id, get_user_id_from_session_pool)
     if not chat_id or is_temporary_chat_id(chat_id):
         return
 
@@ -2123,7 +2141,7 @@ async def verify_chat_ownership(chat_id: str | None, user) -> None:
             detail='Channel chats are not supported on this endpoint',
         )
 
-    if not (user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS) and not await Chats.is_chat_owner(chat_id, user.id):
+    if not (resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS) and not await Chats.is_chat_owner(chat_id, user.id):  # sub2api-embed: no admin bypass for user resources.
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ERROR_MESSAGES.DEFAULT(),
@@ -2138,6 +2156,9 @@ async def chat_completed(request: Request, form_data: dict, user=Depends(get_ver
 
     try:
         model_item = form_data.pop('model_item', {})
+        # sub2api-embed: never dispatch browser-controlled connections.
+        from open_webui.embed.gateway import reject_direct
+        reject_direct(model_item)
 
         if model_item.get('direct', False):
             await _set_direct_model(request, model_item, user)
@@ -2156,6 +2177,9 @@ async def chat_action(request: Request, action_id: str, form_data: dict, user=De
 
     try:
         model_item = form_data.pop('model_item', {})
+        # sub2api-embed: never dispatch browser-controlled connections.
+        from open_webui.embed.gateway import reject_direct
+        reject_direct(model_item)
 
         if model_item.get('direct', False):
             await _set_direct_model(request, model_item, user)
@@ -2187,7 +2211,7 @@ async def list_tasks_by_chat_id_endpoint(request: Request, chat_id: str, user=De
     socket_id = get_temporary_chat_session_id(chat_id)
     if socket_id:
         owner_id = get_user_id_from_session_pool(socket_id)
-        if owner_id != user.id and not (user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS):
+        if owner_id != user.id and not (resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS):  # sub2api-embed: no admin bypass for user resources.
             return {'task_ids': []}
     else:
         chat = await Chats.get_accessible_chat_by_id(chat_id, user, permission='write')
@@ -2209,7 +2233,7 @@ async def stop_tasks_by_chat_id_endpoint(request: Request, chat_id: str, user=De
     chat = None
     if socket_id:
         owner_id = get_user_id_from_session_pool(socket_id)
-        if owner_id != user.id and not (user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS):
+        if owner_id != user.id and not (resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS):  # sub2api-embed: no admin bypass for user resources.
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND)
     else:
         chat = await Chats.get_accessible_chat_by_id(chat_id, user, permission='write')
@@ -2303,6 +2327,11 @@ async def get_app_config(request: Request):
         if data is not None and 'id' in data and await is_valid_token(data, request.app.state.redis):
             user = await Users.get_user_by_id(data['id'])
 
+    # sub2api-embed: config bootstraps signin; a stale account token gets anonymous config.
+    if embed_settings.enabled and user is not None:
+        from open_webui.embed.sub2api_auth import sync_config_user
+        user = await sync_config_user(user, request.headers)
+
     group_defaults = None
     if user is not None and user.role in ('admin', 'user'):
         group_defaults, _ = resolve_group_default_models(
@@ -2387,6 +2416,10 @@ async def get_app_config(request: Request):
     )
 
     return {
+        # sub2api-embed: contract D, absent in upstream mode.
+        **({'sub2api': {'embed': True, 'hide_branding': embed_settings.hide_branding,
+                        'native_web_search': embed_settings.native_web_search, 'image_generation': True}}
+           if embed_settings.enabled else {}),
         **({'onboarding': True} if onboarding else {}),
         'status': True,
         'name': app.state.WEBUI_NAME,
@@ -2444,7 +2477,8 @@ async def get_app_config(request: Request):
                     'enable_notes': config.get('notes.enable'),
                     'enable_context_compaction': config.get('chat.context_compaction.enable'),
                     'enable_tool_permissions': config.get('chat.tool_permissions.enable'),
-                    'enable_web_search': config.get('web.search.enable'),
+                    # sub2api-embed: native search, never the retrieval/search server.
+                    'enable_web_search': config.get('web.search.enable') or (embed_settings.enabled and embed_settings.native_web_search),
                     'enable_web_search_confirmation': config.get('web.search.confirmation.enable'),
                     'web_search_confirmation_content': config.get('web.search.confirmation.content'),
                     'enable_code_execution': config.get('code_execution.enable'),
@@ -3174,3 +3208,13 @@ if os.path.exists(FRONTEND_BUILD_DIR):
     )
 else:
     log.warning(f"Frontend build directory not found at '{FRONTEND_BUILD_DIR}'. Serving API only.")
+
+
+# sub2api-embed: last registered middleware is outermost, including Socket.IO.
+from open_webui.embed.settings import settings as embed_settings
+from open_webui.embed.sub2api_auth import Sub2APIAuthMiddleware
+if embed_settings.enabled:
+    # sub2api-embed: preserve gateway status and top-level structured model-list errors.
+    from open_webui.embed.models import install_error_handler
+    install_error_handler(app)
+    app.add_middleware(Sub2APIAuthMiddleware)

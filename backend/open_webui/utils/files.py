@@ -1,3 +1,4 @@
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
 import asyncio
 import base64
 import io
@@ -53,6 +54,13 @@ _IMAGE_MIME_FALLBACK = {
 
 
 async def get_image_base64_from_url(url: str, user=None) -> Optional[str]:
+    # sub2api-embed: only inline data or canonical owned file identifiers.
+    from open_webui.embed.settings import settings as embed_settings
+    if embed_settings.enabled:
+        if BASE64_IMAGE_URL_PREFIX.match(url):
+            return url
+        if not FILE_CONTENT_URL_PATTERN.match(url) and not re.fullmatch(r'[a-fA-F0-9-]{36}', url):
+            raise HTTPException(400, '只能使用本站文件或内嵌图片')
     try:
         if url.startswith('http'):
             from open_webui.models.config import Config
@@ -218,7 +226,7 @@ async def get_image_base64_from_file_id(id: str, user=None) -> Optional[str]:
     # Owner, admin, and explicit read-grant holders are allowed.
     if user is None:
         return None
-    if file.user_id != user.id and user.role != 'admin' and not await has_access_to_file(file.id, 'read', user):
+    if file.user_id != user.id and not resource_admin(user) and not await has_access_to_file(file.id, 'read', user):  # sub2api-embed: no admin bypass for user resources.
         return None
 
     try:

@@ -1,3 +1,4 @@
+from open_webui.embed.access import resource_admin, private_denied  # sub2api-embed: user-resource isolation.
 import logging
 import time
 from typing import Optional
@@ -60,12 +61,12 @@ async def _user_has_automations(request: Request, user) -> bool:
     return await has_permission(user.id, 'features.automations', config.get('user.permissions'))
 
 
-async def _check_calendar_access(calendar_id: str, user: UserModel, permission: str = 'write') -> CalendarModel:
+async def _check_calendar_access(calendar_id: str, user: UserModel, permission: str = 'write', *, missing: str = 'Calendar not found') -> CalendarModel:  # sub2api-embed: event absence semantics.
     """Verify user has access to a calendar. Returns the calendar or raises 403/404."""
     cal = await Calendars.get_calendar_by_id(calendar_id)
     if not cal:
         raise HTTPException(status_code=404, detail='Calendar not found')
-    if cal.user_id == user.id or user.role == 'admin':
+    if cal.user_id == user.id or resource_admin(user):  # sub2api-embed: no admin bypass for user resources.
         return cal
     user_groups = await Groups.get_groups_by_member_id(user.id, include_inherited=True)
     user_group_ids = [g.id for g in user_groups]
@@ -77,7 +78,7 @@ async def _check_calendar_access(calendar_id: str, user: UserModel, permission: 
         user_group_ids=user_group_ids,
     ):
         return cal
-    raise HTTPException(status_code=403, detail='Access denied')
+    raise private_denied(403, 'Access denied', missing=missing)  # sub2api-embed: hide private calendar/event IDs.
 
 
 ####################
@@ -316,7 +317,7 @@ async def get_event(request: Request, event_id: str, user: UserModel = Depends(g
     if not event:
         raise HTTPException(status_code=404, detail='Event not found')
 
-    await _check_calendar_access(event.calendar_id, user, 'read')
+    await _check_calendar_access(event.calendar_id, user, 'read', missing='Event not found')  # sub2api-embed: no existence oracle.
 
     return event
 
@@ -330,7 +331,7 @@ async def update_event(
     if not event:
         raise HTTPException(status_code=404, detail='Event not found')
 
-    await _check_calendar_access(event.calendar_id, user, 'write')
+    await _check_calendar_access(event.calendar_id, user, 'write', missing='Event not found')  # sub2api-embed: no existence oracle.
 
     # A new calendar_id in the form moves the event; require write access on the
     # destination too, mirroring create_event. Without this, write on the source
@@ -361,7 +362,7 @@ async def delete_event(request: Request, event_id: str, user: UserModel = Depend
     if not event:
         raise HTTPException(status_code=404, detail='Event not found')
 
-    await _check_calendar_access(event.calendar_id, user, 'write')
+    await _check_calendar_access(event.calendar_id, user, 'write', missing='Event not found')  # sub2api-embed: no existence oracle.
 
     result = await CalendarEvents.delete_event_by_id(event_id)
     if not result:
@@ -418,7 +419,7 @@ async def update_calendar(
     cal = await _check_calendar_access(calendar_id, user, 'write')
 
     # Only owner/admin can change access grants
-    if form_data.access_grants is not None and cal.user_id != user.id and user.role != 'admin':
+    if form_data.access_grants is not None and cal.user_id != user.id and not resource_admin(user):  # sub2api-embed: no admin bypass for user resources.
         raise HTTPException(status_code=403, detail='Only owner can manage sharing')
 
     # Strip public/user grants the requesting user is not permitted to assign
@@ -459,7 +460,7 @@ async def delete_calendar(request: Request, calendar_id: str, user: UserModel = 
     cal = await _check_calendar_access(calendar_id, user, 'write')
 
     # Only owner/admin can delete
-    if cal.user_id != user.id and user.role != 'admin':
+    if cal.user_id != user.id and not resource_admin(user):  # sub2api-embed: no admin bypass for user resources.
         raise HTTPException(status_code=403, detail='Only owner can delete calendar')
 
     # Block deletion of default calendar

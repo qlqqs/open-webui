@@ -1,3 +1,4 @@
+from open_webui.embed.access import resource_admin, private_denied  # sub2api-embed: user-resource isolation.
 import logging
 import mimetypes
 import os
@@ -109,7 +110,7 @@ async def get_folders(
         return current_id == folder_id
 
     user_group_ids = None
-    if user.role != 'admin' and any(folder.data and 'files' in folder.data for folder in folders):
+    if not resource_admin(user) and any(folder.data and 'files' in folder.data for folder in folders):  # sub2api-embed: no admin bypass for user resources.
         user_group_ids = {
             group.id for group in await Groups.get_groups_by_member_id(user.id, db=db, include_inherited=True)
         }
@@ -180,7 +181,7 @@ async def create_folder(
         parent = await Folders.get_folder_by_id(form_data.parent_id, db=db)
         if parent and parent.user_id != user.id:
             # Creating subfolder in someone else's shared folder
-            if user.role != 'admin' and not await _has_folder_access(user.id, parent, 'write', db):
+            if not resource_admin(user) and not await _has_folder_access(user.id, parent, 'write', db):  # sub2api-embed: no admin bypass for user resources.
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
@@ -313,12 +314,12 @@ async def get_folder_by_id(
 
     # Check shared access
     folder = await Folders.get_folder_by_id(id, db=db)
-    if folder and (user.role == 'admin' or await _has_folder_access(user.id, folder, 'read', db)):
+    if folder and (resource_admin(user) or await _has_folder_access(user.id, folder, 'read', db)):  # sub2api-embed: no admin bypass for user resources.
         grants = await AccessGrants.get_grants_by_resource('folder', id, db=db)
         return FolderResponse(
             **folder.model_dump(),
             access_grants=[g.model_dump() for g in grants],
-            write_access=user.role == 'admin' or await _has_folder_access(user.id, folder, 'write', db),
+            write_access=resource_admin(user) or await _has_folder_access(user.id, folder, 'write', db),  # sub2api-embed: no admin bypass for user resources.
         )
 
     raise HTTPException(
@@ -345,7 +346,7 @@ async def update_folder_name_by_id(
     if not folder:
         # Check shared write access
         folder = await Folders.get_folder_by_id(id, db=db)
-        if not folder or (user.role != 'admin' and not await _has_folder_access(user.id, folder, 'write', db)):
+        if not folder or (not resource_admin(user) and not await _has_folder_access(user.id, folder, 'write', db)):  # sub2api-embed: no admin bypass for user resources.
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=ERROR_MESSAGES.NOT_FOUND,
@@ -353,7 +354,7 @@ async def update_folder_name_by_id(
 
     if folder:
         if (
-            user.role != 'admin'
+            not resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
             and user.id != folder.user_id
             and form_data.data
             and 'share_mode' in form_data.data
@@ -499,8 +500,12 @@ async def update_folder_is_expanded_by_id(
     folder = await Folders.get_folder_by_id_and_user_id(id, user.id, db=db)
     if not folder:
         folder = await Folders.get_folder_by_id(id, db=db)
-        if folder and (user.role == 'admin' or await _has_folder_access(user.id, folder, 'read', db)):
+        if folder and (resource_admin(user) or await _has_folder_access(user.id, folder, 'read', db)):  # sub2api-embed: no admin bypass for user resources.
             return folder
+        # sub2api-embed: an unreadable folder is indistinguishable from a missing one.
+        from open_webui.embed.settings import settings as embed_settings
+        if embed_settings.enabled:
+            folder = None
 
     if folder:
         try:
@@ -549,11 +554,8 @@ async def update_folder_access_by_id(
         )
 
     # Editing folder contents does not grant permission to manage sharing.
-    if user.role != 'admin' and user.id != folder.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
-        )
+    if not resource_admin(user) and user.id != folder.user_id:  # sub2api-embed: no admin bypass for user resources.
+        raise private_denied(403, ERROR_MESSAGES.ACCESS_PROHIBITED)  # sub2api-embed: private folder.
 
     form_data.access_grants = await filter_allowed_access_grants(
         await Config.get('user.permissions'),
@@ -609,15 +611,12 @@ async def get_shared_folder_chats(
         )
 
     is_owner = user.id == folder.user_id
-    is_admin = user.role == 'admin'
+    is_admin = resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
     has_write = is_owner or is_admin or await _has_folder_access(user.id, folder, 'write', db)
     has_read = has_write or await _has_folder_access(user.id, folder, 'read', db)
 
     if not has_read:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
-        )
+        raise private_denied(403, ERROR_MESSAGES.ACCESS_PROHIBITED)  # sub2api-embed: private folder.
 
     limit = 10
     skip = (page - 1) * limit if page is not None else 0
@@ -680,12 +679,9 @@ async def mark_folder_chats_read_by_id(
         )
 
     is_owner = user.id == folder.user_id
-    is_admin = user.role == 'admin'
+    is_admin = resource_admin(user)  # sub2api-embed: no admin bypass for user resources.
     if not (is_owner or is_admin or await _has_folder_access(user.id, folder, 'read', db)):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
-        )
+        raise private_denied(403, ERROR_MESSAGES.ACCESS_PROHIBITED)  # sub2api-embed: private folder.
 
     folder_ids = (
         await Folders.get_folder_ids_by_id_and_user_id_in_subtree(id, folder.user_id, db=db)
@@ -726,11 +722,8 @@ async def delete_folder_by_id(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=ERROR_MESSAGES.NOT_FOUND,
             )
-        if user.role != 'admin':
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
-            )
+        if not resource_admin(user):  # sub2api-embed: no admin bypass for user resources.
+            raise private_denied(403, ERROR_MESSAGES.ACCESS_PROHIBITED)  # sub2api-embed: private folder.
 
     folder_owner_id = folder.user_id
 
@@ -740,10 +733,7 @@ async def delete_folder_by_id(
             user.id, 'chat.delete', await Config.get('user.permissions'), db=db
         )
         if user.role != 'admin' and not chat_delete_permission:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
-            )
+            raise private_denied(403, ERROR_MESSAGES.ACCESS_PROHIBITED)  # sub2api-embed: private folder.
 
     folders = []
     folders.append(folder)

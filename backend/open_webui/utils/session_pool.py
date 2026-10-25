@@ -27,6 +27,7 @@ import logging
 from typing import Optional
 
 import aiohttp
+from open_webui.embed.settings import settings as embed_settings  # sub2api-embed: no shared cookie auth
 from open_webui.env import (
     AIOHTTP_CLIENT_STREAM_IDLE_TIMEOUT,
     AIOHTTP_CLIENT_TIMEOUT,
@@ -73,6 +74,7 @@ async def get_session() -> aiohttp.ClientSession:
             connector=connector,
             timeout=timeout,
             trust_env=True,
+            cookie_jar=aiohttp.DummyCookieJar() if embed_settings.enabled else None,  # sub2api-embed: isolate users
         )
         log.info(
             'Created shared aiohttp session pool (limit=%s, per_host=%s, dns_ttl=%d)',

@@ -1,3 +1,5 @@
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
+from open_webui.embed.settings import settings as embed_settings  # sub2api-embed: native search
 import ast
 import asyncio
 import base64
@@ -1865,6 +1867,9 @@ async def convert_url_images_to_base64(form_data, user=None):
                 else:
                     new_content.append(item)
             except Exception as e:
+                # sub2api-embed: never silently forward rejected external image references.
+                if embed_settings.enabled:
+                    raise HTTPException(400, '只能使用本站文件或内嵌图片') from e
                 log.debug('Error converting image URL to base64: %s', e)
                 new_content.append(item)
 
@@ -2019,6 +2024,10 @@ def sanitize_tool_pairs(messages: list[dict]) -> list[dict]:
 
 
 async def process_chat_payload(request, form_data, user, metadata, model):
+    # sub2api-embed: browser-supplied tools/terminal metadata cannot reopen disabled surfaces.
+    if embed_settings.enabled:
+        if form_data.get('tool_servers') or metadata.get('tool_servers') or form_data.get('terminal_id'):
+            raise HTTPException(403, '不允许直连工具服务器或终端')
     # Ensure chat_id is always a string — external API clients may omit it.
     if not isinstance(metadata.get('chat_id'), str):
         metadata['chat_id'] = ''
@@ -2239,7 +2248,7 @@ async def process_chat_payload(request, form_data, user, metadata, model):
 
     if folder_id and user:
         folder = await Folders.get_folder_by_id(folder_id)
-        if folder and user.role != 'admin' and not await has_folder_access(user.id, folder, 'read', db=None):
+        if folder and not resource_admin(user) and not await has_folder_access(user.id, folder, 'read', db=None):  # sub2api-embed: no admin bypass for user resources.
             folder = None
 
         if folder and folder.data:
@@ -2362,6 +2371,12 @@ async def process_chat_payload(request, form_data, user, metadata, model):
                 if metadata.get('params', {}).get('function_calling') == 'legacy':
                     form_data = await chat_web_search_handler(request, form_data, extra_params, user)
 
+        # sub2api-embed: only gateway-native search, never server web retrieval.
+        if (embed_settings.enabled and embed_settings.native_web_search and features.get('web_search')
+            and (user.role == 'admin' or await has_permission(
+                user.id, 'features.web_search', await Config.get('user.permissions')))):
+            metadata['s2a_native_web_search'] = True
+
         if 'image_generation' in features and features['image_generation']:
             # features is client-supplied; re-check the permission the direct /images routes enforce.
             if getattr(user, 'role', None) == 'admin' or await has_permission(
@@ -2468,7 +2483,7 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         note_id = (chat.meta or {}).get('note_id')
         note = await Notes.get_note_by_id(note_id) if note_id else None
         if note and (
-            user.role == 'admin'
+            resource_admin(user)  # sub2api-embed: recheck note access on internal chat continuations.
             or note.user_id == user.id
             or await AccessGrants.has_access(
                 user_id=user.id,
@@ -2929,6 +2944,12 @@ async def process_chat_payload(request, form_data, user, metadata, model):
                     sources.extend(flags.get('sources', []))
                 except Exception as e:
                     log.exception(e)
+
+    # sub2api-embed: append after native function tools and filters have resolved.
+    if embed_settings.enabled and metadata.get('s2a_native_web_search'):
+        tools = form_data.get('tools') or []
+        if not any(isinstance(t, dict) and t.get('type') == 'web_search' for t in tools):
+            form_data['tools'] = [*tools, {'type': 'web_search'}]
 
     # Check if file context extraction is enabled for this model (default True)
     file_context_enabled = (model.get('info', {}).get('meta', {}).get('capabilities') or {}).get('file_context', True)

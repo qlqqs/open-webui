@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from open_webui.embed.access import resource_admin  # sub2api-embed: user-resource isolation.
+
 import logging
 from uuid import uuid4
 
@@ -123,7 +125,7 @@ async def is_open_shared_chat(shared, db: AsyncSession) -> bool:
 async def can_read_shared_chat(user, shared, db: AsyncSession) -> bool:
     if user.role == 'pending':
         return False
-    if user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS:
+    if resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS:  # sub2api-embed: no admin bypass for user resources.
         return True
     if shared.user_id == user.id:
         return True
@@ -725,7 +727,7 @@ async def export_single_chat_stats(
             )
 
         # Verify the chat belongs to the user (unless admin)
-        if chat.user_id != user.id and not (user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS):
+        if chat.user_id != user.id and not (resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS):  # sub2api-embed: no admin bypass for user resources.
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
@@ -1306,7 +1308,7 @@ async def get_shared_chat_by_id(
 
     # Fallback: admins can also access any chat directly by chat ID
     chat = None
-    if user is not None and user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS:
+    if user is not None and resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS:  # sub2api-embed: no admin bypass for user resources.
         chat = await Chats.get_chat_by_id(share_id, db=db)
         if chat:
             data = await shared_chat_response(chat, user, db=db)
@@ -1507,7 +1509,7 @@ async def update_chat_message_by_id(
             detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
         )
 
-    if chat.user_id != user.id and not (user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS):
+    if chat.user_id != user.id and not (resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS):  # sub2api-embed: no admin bypass for user resources.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
@@ -1573,7 +1575,7 @@ async def delete_chat_message_by_id(
             detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
         )
 
-    if chat.user_id != user.id and not (user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS):
+    if chat.user_id != user.id and not (resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS):  # sub2api-embed: no admin bypass for user resources.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
@@ -1621,7 +1623,7 @@ async def send_chat_message_event_by_id(
             detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
         )
 
-    if chat.user_id != user.id and not (user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS):
+    if chat.user_id != user.id and not (resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS):  # sub2api-embed: no admin bypass for user resources.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
@@ -1668,7 +1670,7 @@ async def delete_chat_by_id(
     # not be reachable for a chat the caller may not delete.
     if user.role == 'admin':
         chat = await Chats.get_chat_by_id(id, db=db)
-        if chat and chat.user_id != user.id and not ENABLE_ADMIN_CHAT_ACCESS:
+        if chat and chat.user_id != user.id and not (resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS):  # sub2api-embed: deletion is owner-only.
             chat = None
     else:
         if not await has_permission(user.id, 'chat.delete', await Config.get('user.permissions')):
@@ -1694,7 +1696,7 @@ async def delete_chat_by_id(
         await stop_item_tasks(request.app.state.redis, child_id)
         await Chats.delete_chat_by_id_and_user_id(child_id, chat.user_id)
 
-    if user.role == 'admin':
+    if resource_admin(user):  # sub2api-embed: no admin bypass for user resources.
         result = await Chats.delete_chat_by_id(id, db=db)
     else:
         result = await Chats.delete_chat_by_id_and_user_id(id, user.id, db=db)
@@ -1955,7 +1957,7 @@ async def clone_shared_chat_by_id(
 
     # Enforce access grants (owner and admins bypass)
     shared = await SharedChats.get_by_id(id, db=db)
-    if shared and not (user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS) and shared.user_id != user.id:
+    if shared and not (resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS) and shared.user_id != user.id:  # sub2api-embed: no admin bypass for user resources.
         has_grant = await is_open_shared_chat(shared, db=db) or await AccessGrants.has_access(
             user_id=user.id,
             resource_type='shared_chat',
@@ -1974,7 +1976,7 @@ async def clone_shared_chat_by_id(
         chat = await Chats.get_chat_by_id(shared.chat_id, db=db)
 
     # Fallback: admins can also access any chat directly by chat ID
-    if not chat and user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS:
+    if not chat and resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS:  # sub2api-embed: no admin bypass for user resources.
         chat = await Chats.get_chat_by_id(id, db=db)
 
     if not chat:
@@ -2156,7 +2158,7 @@ async def update_shared_chat_access_by_id(
     user=Depends(get_verified_user),
     db: AsyncSession = Depends(get_async_session),
 ):
-    if user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS:
+    if resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS:  # sub2api-embed: no admin bypass for user resources.
         chat = await Chats.get_chat_by_id(id, db=db)
     else:
         chat = await Chats.get_chat_by_id_and_user_id(id, user.id, db=db)
@@ -2197,7 +2199,7 @@ async def get_shared_chat_access_by_id(
     user=Depends(get_verified_user),
     db: AsyncSession = Depends(get_async_session),
 ):
-    if user.role == 'admin' and ENABLE_ADMIN_CHAT_ACCESS:
+    if resource_admin(user) and ENABLE_ADMIN_CHAT_ACCESS:  # sub2api-embed: no admin bypass for user resources.
         chat = await Chats.get_chat_by_id(id, db=db)
     else:
         chat = await Chats.get_chat_by_id_and_user_id(id, user.id, db=db)
