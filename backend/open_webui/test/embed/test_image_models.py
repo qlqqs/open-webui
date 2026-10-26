@@ -203,3 +203,18 @@ def test_docker_defaults_match_settings():
     assert f'S2A_HIDDEN_CHAT_MODELS="{DEFAULT_HIDDEN_CHAT_MODELS}"' in source
     assert 'IMAGE_GENERATION_MODEL="gpt-image-2"' in source
     assert 'IMAGE_EDIT_MODEL="gpt-image-2"' in source
+
+
+@pytest.mark.asyncio
+async def test_signup_image_model_is_exact_and_never_falls_back(stub):
+    user = SimpleNamespace(settings=SimpleNamespace(ui={
+        'sub2api_defaults': {'image_model': 'gpt-image-2.5-sunburst'}
+    }))
+    stub.bodies['chat-key'] = ['gpt-image-2', 'gpt-image-2.5-sunburst']
+    assert await images.resolve_model(stub.request, 'gpt-image-2', user) == 'gpt-image-2.5-sunburst'
+    stub.request.app.state.SUB2API_MODEL_CACHE.clear()
+    stub.bodies['chat-key'] = ['gpt-image-2']
+    with pytest.raises(HTTPException) as caught:
+        await images.resolve_model(stub.request, 'gpt-image-2', user)
+    assert caught.value.status_code == 400
+    assert caught.value.detail == '默认模型不可用，请选择其他模型'

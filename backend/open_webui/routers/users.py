@@ -494,7 +494,12 @@ async def update_user_settings_by_session_user(
     db: AsyncSession = Depends(get_async_session),
 ):
     updated_user_settings = form_data.model_dump(exclude_unset=True)
+    # sub2api-embed: optional conditional initialization, never a global settings reset.
+    from open_webui.embed.settings import settings as embed_settings
+    initialize_workbench = embed_settings.enabled and updated_user_settings.pop('sub2api_initialize', False) is True
     ui_settings = updated_user_settings.get('ui')
+    if embed_settings.enabled and isinstance(ui_settings, dict) and 'sub2api' in ui_settings:
+        ui_settings['sub2api_initialized'] = True
 
     if isinstance(ui_settings, dict):
         if user.role != 'admin' and not await has_permission(
@@ -553,7 +558,11 @@ async def update_user_settings_by_session_user(
         if isinstance(ui_notifications, dict):
             ui_notifications.pop('webhook_url', None)
 
-    user = await Users.update_user_settings_by_id(user.id, updated_user_settings, db=db)
+    if initialize_workbench:
+        from open_webui.embed.workbench import initialize_settings
+        user = await initialize_settings(user.id, updated_user_settings, db)
+    else:
+        user = await Users.update_user_settings_by_id(user.id, updated_user_settings, db=db)
     if user:
         await publish_event(
             request,

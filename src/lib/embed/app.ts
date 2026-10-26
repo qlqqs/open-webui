@@ -21,6 +21,8 @@ import { startNeutralAvatars, stopNeutralAvatars } from './avatar';
 import { translate } from './i18n';
 import { mapGatewayError } from './errors';
 
+import { initializeWorkbench } from './workbench-defaults';
+
 const USER_KEY = 's2a:uid';
 /** survive an account switch inside the same browser (everything else is per user) */
 const KEEP_ON_SWITCH = ['token', 'theme', 'locale', 's2a:hide-branding', USER_KEY];
@@ -122,6 +124,13 @@ const GUIDED_KEY = 's2a:key-guide-shown';
 export async function embedAfterUserSettings(): Promise<void> {
 	if (!isEmbedMode()) return;
 	const keys = await refreshKeys();
+	if (keys) {
+		try {
+			await initializeWorkbench(keys);
+		} catch {
+			toast.error(translate(i18next.language, 'defaults.saveFailed'));
+		}
+	}
 	const raw = (get(settings) as Record<string, unknown> | undefined)?.sub2api;
 	const resolved = resolveKeys(keys ?? [], raw);
 	refreshModelPrices(resolved.chatKey?.id ?? normalizeSelection(raw).key_id);

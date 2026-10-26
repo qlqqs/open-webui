@@ -242,6 +242,11 @@ type OllamaModelDetails = {
 };
 
 type Settings = {
+    // sub2api-embed: per-user choices, independent of browser storage.
+    sub2api?: { key_id?: number | null; image_key_id?: number | null };
+    sub2api_initialized?: boolean;
+    sub2api_defaults?: { text_model: string; image_model: string; reasoning_effort: string };
+    sub2api_reasoning?: Record<string, string>;
 	pinnedModels?: string[];
 	toolServers?: never[];
 	detectArtifacts?: boolean;

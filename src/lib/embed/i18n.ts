@@ -44,6 +44,8 @@ const zhCN = {
 	'guide.title': '先选择一个 Key',
 	'guide.body': '对话需要使用你的 API Key 计费。请在「模型与密钥」里选择或一键创建一个 Key。',
 	'guide.action': '去选择',
+	'defaults.unavailable': '默认模型不可用，请选择其他模型',
+	'defaults.saveFailed': '默认配置暂不可用，请在「模型与密钥」中配置 Key',
 	'image.needKey': '生图需要支持生图的 Key',
 	'composer.webSearch': '联网搜索',
 	'composer.webSearchHint': '打开后，模型会在需要时自己联网搜索',
@@ -132,6 +134,8 @@ const enUS: Record<EmbedStringKey, string> = {
 	'guide.body':
 		'Chats are billed to your API key. Select one or create one in “Models & Keys”.',
 	'guide.action': 'Choose',
+	'defaults.unavailable': 'The default model is unavailable. Please choose another model.',
+	'defaults.saveFailed': 'Default settings are unavailable. Please configure a key in Models & Keys.',
 	'image.needKey': 'Image generation needs a key that supports images',
 	'composer.webSearch': 'Web search',
 	'composer.webSearchHint': 'When on, the model searches the web whenever it needs to',

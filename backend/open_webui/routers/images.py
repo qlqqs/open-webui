@@ -640,7 +640,7 @@ async def image_generations(
     model = await get_image_model(request)
     # sub2api-embed: resolve before error wrapping/paid requests; preserve gateway model errors.
     if embed_settings.enabled:
-        model = await embed_images.resolve_model(request, image_config.IMAGE_GENERATION_MODEL)
+        model = await embed_images.resolve_model(request, image_config.IMAGE_GENERATION_MODEL, user)
         image_config.IMAGE_GENERATION_MODEL = model  # response_format must follow the resolved model.
 
     try:
@@ -957,7 +957,7 @@ async def image_edits(
     model = image_config.IMAGE_EDIT_MODEL if form_data.model is None else form_data.model
     # sub2api-embed: resolve before loading inputs/paid requests; preserve gateway model errors.
     if embed_settings.enabled:
-        model = await embed_images.resolve_model(request, image_config.IMAGE_EDIT_MODEL)
+        model = await embed_images.resolve_model(request, image_config.IMAGE_EDIT_MODEL, user)
         image_config.IMAGE_EDIT_MODEL = model  # response_format must follow the resolved model.
 
     try:

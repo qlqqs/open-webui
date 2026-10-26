@@ -24,9 +24,17 @@ def validate_request(form):
         raise HTTPException(400, f'生图数量必须在 1–{settings.image_max_n} 之间')
 
 
-async def resolve_model(request, configured):
+async def resolve_model(request, configured, user=None):
     """Use the image Key's full cached list, independent of chat-list visibility."""
     available = {model['id'] for model in (await gateway_models(request, image=True))['data']}
+    # Per-user signup defaults must not change global image settings or silently fall back.
+    ui = getattr(getattr(user, 'settings', None), 'ui', {}) or {}
+    defaults = ui.get('sub2api_defaults') or {}
+    preferred = defaults.get('image_model')
+    if preferred:
+        if preferred not in available:
+            raise HTTPException(400, '默认模型不可用，请选择其他模型')
+        return preferred
     if configured in available:
         return configured
     candidates = [name for name in available if re.search(IMAGE_MODEL_PATTERN, name, re.IGNORECASE)]

@@ -2,6 +2,8 @@
 // (`/__sub2api/model-reasoning`, capped by the key's group); the user's choice is remembered per
 // model in this browser and sent as `params.reasoning_effort`. No choice = the gateway default.
 import { derived, get, writable, type Readable } from 'svelte/store';
+import { settings } from '$lib/stores';
+import { updateUserSettings } from '$lib/apis/users';
 import { localStorage } from './storage';
 import { fetchModelReasoning, type ModelReasoning } from './keys';
 import type { EmbedStringKey } from './i18n';
@@ -49,6 +51,15 @@ const load = (): Record<string, string> => {
 export const reasoningChoices = writable<Record<string, string>>(load());
 
 export function setReasoningChoice(modelId: string, level: string): void {
+	if (get(settings)?.sub2api_defaults) {
+		const choices = { ...(get(settings)?.sub2api_reasoning ?? {}), [modelId]: level };
+		settings.update((s) => ({ ...s, sub2api_reasoning: choices }));
+		void updateUserSettings(localStorage.token, { ui: { sub2api_reasoning: choices } }).catch(
+			() => {
+				// Current choice remains in local storage when a transient save fails.
+			}
+		);
+	}
 	reasoningChoices.update((choices) => {
 		const next = { ...choices, [modelId]: level };
 		try {
@@ -98,13 +109,22 @@ export function reasoningState(
 }
 
 export const reasoningFor = (modelId: string | null | undefined): Readable<ReasoningState | null> =>
-	derived([modelReasoning, reasoningChoices], ([$reasoning, $choices]) =>
-		modelId ? reasoningState(modelId, $reasoning[modelId], $choices[modelId]) : null
+	derived([modelReasoning, reasoningChoices, settings], ([$reasoning, $choices, $settings]) =>
+		modelId
+			? reasoningState(
+					modelId,
+					$reasoning[modelId],
+					$settings?.sub2api_reasoning?.[modelId] ?? $choices[modelId]
+				)
+			: null
 	);
 
 /** Extra chat params for one model's request; empty when there is nothing to send. */
 export function reasoningParams(modelId: string): { reasoning_effort?: string } {
-	const effort = chosenEffort(get(modelReasoning)[modelId], get(reasoningChoices)[modelId]);
+	const effort = chosenEffort(
+		get(modelReasoning)[modelId],
+		get(settings)?.sub2api_reasoning?.[modelId] ?? get(reasoningChoices)[modelId]
+	);
 	return effort ? { reasoning_effort: effort } : {};
 }
 

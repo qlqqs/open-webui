@@ -239,6 +239,11 @@
 	let contextUsage = null;
 
 	const normalizeSelectedModels = (modelIds: string[] = []) => {
+        // sub2api-embed: an unavailable explicit signup model must not silently become another model.
+        if (embedded && $settings?.sub2api_defaults) {
+            const requested = modelIds.filter(Boolean).length ? modelIds.filter(Boolean) : ($settings?.models ?? []);
+            if (requested.length && !requested.some(id => $models.some(m => m.id === id))) return [''];
+        }
 		const selected = resolveDefaultModelIds(
 			$models,
 			modelIds,
